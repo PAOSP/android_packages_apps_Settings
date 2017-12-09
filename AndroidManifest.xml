@@ -3238,5 +3238,7 @@
             </intent-filter>
         </receiver>
 
+        <activity android:name=".hnt.HAFRAppListActivity" />
+
     </application>
 </manifest>
