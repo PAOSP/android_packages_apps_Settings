@@ -2389,9 +2389,18 @@
     <string name="qgp_version">QGP Version</string>
     <!-- About phone screen,  setting option name  [CHAR LIMIT=40] -->
     <string name="selinux_status">SELinux status</string>
+	
+	
+	<!-- Release info  [CHAR LIMIT=40] -->
+	<string name="release">PornAOSP Release</string>
+	<string name="release_ver">1.1 \"Bobs\" Beta</string>
+	
+	<!-- Maintainer info  [CHAR LIMIT=40] -->
+    <string name="maintainer">PornAOSP maintainer</string>
+    <string name="maintainer_dev">fucker who is too lazy to change string</string>
 
     <!-- About phone screen, show when a value of some status item is unavailable. -->
-    <string name="device_info_not_available">Not available</string>
+    <string name="device_info_not_available">no info 4 u</string>
     <!-- About phone screen, phone status screen title -->
     <string name="device_status_activity_title">Status</string>
     <!-- About phone screen, title of the item to go into the Phone status screen -->
