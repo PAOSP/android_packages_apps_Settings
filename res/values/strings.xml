@@ -145,14 +145,14 @@
     <string name="radioInfo_cid">CID</string>
 
     <!-- Used for diagnostic info screens, precise translation isn't needed. Unmounts the SD card from the phone, meaning it will become available for an attached computer  [CHAR LIMIT=25] -->
-    <string name="sdcard_unmount" product="nosdcard">Unmount USB storage</string>
+    <string name="sdcard_unmount" product="nosdcard">Give my USB back!</string>
     <!-- Used for diagnostic info screens, precise translation isn't needed. Unmounts the SD card from the phone, meaning it will become available for an attached computer  -->
-    <string name="sdcard_unmount" product="default">Unmount SD card</string>
+    <string name="sdcard_unmount" product="default">Give my SD back!</string>
 
     <!-- Used for diagnostic info screens, precise translation isn't needed. Formats the SD card in the phone, meaning it will be erased and reformatted [CHAR LIMIT=25] -->
-    <string name="sdcard_format" product="nosdcard">Erase USB storage</string>
+    <string name="sdcard_format" product="nosdcard">Nuke your USB</string>
     <!-- Used for diagnostic info screens, precise translation isn't needed. Formats the SD card in the phone, meaning it will be erased and reformatted -->
-    <string name="sdcard_format" product="default">Erase SD card</string>
+    <string name="sdcard_format" product="default">Nuke your SD</string>
 
     <!-- Content description for preview pager. [CHAR LIMIT=NONE] -->
     <string name="preview_pager_content_description">Preview</string>
@@ -170,13 +170,13 @@
     <string name="large_font">Large</string>
 
     <!-- Description for the button that makes interface elements smaller. [CHAR_LIMIT=NONE] -->
-    <string name="font_size_make_smaller_desc">Make smaller</string>
+    <string name="font_size_make_smaller_desc">Gib less</string>
     <!-- Description for the button that makes interface elements larger. [CHAR_LIMIT=NONE] -->
-    <string name="font_size_make_larger_desc">Make larger</string>
+    <string name="font_size_make_larger_desc">Gib moar</string>
 
     <!-- Sample text for font size preview. -->
-    <string name="font_size_preview_text">Servez à ce monsieur une bière et des kiwis.</string>
-    <string name="font_size_preview_text_headline">Sample text</string>
+    <string name="font_size_preview_text">Some French shit nobody cares about. Gib porn!</string>
+    <string name="font_size_preview_text_headline">Powered by MLG</string>
     <string name="font_size_preview_text_title"
             translation_description="Title text in sample text used to illustrate how the currently selected font size will appear to the user. NOTE: Translate manually. No not adopt any copyrighted material for translation.">
         The Wonderful Wizard of Oz
@@ -202,22 +202,22 @@
     <string name="font_size_save">OK</string>
 
     <!-- Title for a notification shown. [CHAR LIMIT=25] -->
-    <string name="sdcard_setting" product="nosdcard">USB storage</string>
+    <string name="sdcard_setting" product="nosdcard">PornDrive</string>
     <!-- Title for a notification shown. -->
-    <string name="sdcard_setting" product="default">SD card</string>
+    <string name="sdcard_setting" product="default">SDick</string>
 
     <!-- Used as setting title (for checkbox) on second screen after selecting Bluetooth settings -->
     <string name="bluetooth">Bluetooth</string>
     <!-- Bluetooth settings screen, summary after selecting Discoverable check box [CHAR LIMIT=50] -->
-    <string name="bluetooth_is_discoverable">Visible to all nearby Bluetooth devices (<xliff:g id="discoverable_time_period">%1$s</xliff:g>)</string>
+    <string name="bluetooth_is_discoverable">Broadcasting vegana (<xliff:g id="discoverable_time_period">%1$s</xliff:g>)</string>
     <!-- Bluetooth settings screen, summary when Discoverable duration is set to "forever" [CHAR LIMIT=50] -->
-    <string name="bluetooth_is_discoverable_always">Visible to all nearby Bluetooth devices</string>
+    <string name="bluetooth_is_discoverable_always">Broadcasting vegana!</string>
     <!-- Bluetooth settings screen, summary text when not discoverable and no paired devices [CHAR LIMIT=50] -->
-    <string name="bluetooth_not_visible_to_other_devices">Not visible to other Bluetooth devices</string>
+    <string name="bluetooth_not_visible_to_other_devices">Vegana closed</string>
     <!-- Bluetooth settings screen, summary text when not discoverable with paired devices [CHAR LIMIT=50] -->
-    <string name="bluetooth_only_visible_to_paired_devices">Only visible to paired devices</string>
+    <string name="bluetooth_only_visible_to_paired_devices">Vegana closed, but you have some trusted dicks</string>
     <!-- Bluetooth settings screen, option name to pick discoverability timeout duration (a list dialog comes up) -->
-    <string name="bluetooth_visibility_timeout">Visibility timeout</string>
+    <string name="bluetooth_visibility_timeout">Vegana open timeout</string>
     <!-- Bluetooth settings screen, check box label whether or not to allow
         bluetooth voice dialing when lock screen is up-->
     <string name="bluetooth_lock_voice_dialing">Lock voice dialing</string>
@@ -226,9 +226,9 @@
       Prevent use of the bluetooth dialer when the screen is locked
     </string>
     <!-- Bluetooth settings screen, heading above the list of nearby bluetooth devices -->
-    <string name="bluetooth_devices">Bluetooth devices</string>
+    <string name="bluetooth_devices">Closest dicks</string>
     <!-- Bluetooth settings screen, title for the current bluetooth name setting -->
-    <string name="bluetooth_device_name">Device name</string>
+    <string name="bluetooth_device_name">Vegana name</string>
     <!-- Bluetooth settings screen, image description for device details button. This opens the screen to rename, unpair, etc. a single device. -->
     <string name="bluetooth_device_details">Device settings</string>
     <!-- Bluetooth settings screen, image description for profile of a device details button. -->
@@ -236,22 +236,22 @@
     <!-- Bluetooth settings screen, summary text when there isn't a name set (for the name setting) -->
     <string name="bluetooth_name_not_set">No name set, using account name</string>
     <!-- Bluetooth settings screen, menu item to scan for nearby bluetooth devices -->
-    <string name="bluetooth_scan_for_devices">Scan for devices</string>
+    <string name="bluetooth_scan_for_devices">Scan for dicks</string>
     <!-- Bluetooth settings screen, menu item to change this device's Bluetooth name. [CHAR LIMIT=30] -->
-    <string name="bluetooth_rename_device">Rename this device</string>
+    <string name="bluetooth_rename_device">Rename this dick</string>
     <!-- Bluetooth settings screen, confirmation button for rename device dialog. [CHAR LIMIT=20] -->
     <string name="bluetooth_rename_button">Rename</string>
     <!-- Bluetooth settings.  Dialog title to confirm disconnecting from all profiles of a device. [CHAR LIMIT=30] -->
-    <string name="bluetooth_disconnect_title">Disconnect?</string>
+    <string name="bluetooth_disconnect_title">Cancel orgy?</string>
     <!-- Bluetooth settings.  Message for disconnecting from all profiles of a bluetooth device. [CHAR LIMIT=NONE] -->
-    <string name="bluetooth_disconnect_all_profiles">This will end your connection with:&lt;br>&lt;b><xliff:g id="device_name">%1$s</xliff:g>&lt;/b></string>
+    <string name="bluetooth_disconnect_all_profiles">This will end your orgy with:&lt;br>&lt;b><xliff:g id="device_name">%1$s</xliff:g>&lt;/b></string>
     <!-- Bluetooth Settings. text displayed when user has restriction DISALLOW_CONFIG_BLUETOOTH [CHAR LIMIT=NONE]-->
-    <string name="bluetooth_empty_list_user_restricted">You don\u2019t have permission to change Bluetooth settings.</string>
+    <string name="bluetooth_empty_list_user_restricted">You don\u2019t have permission to change vegana settings.</string>
 
     <!-- Bluetooth Visibility message.  This message informs the user that their device is now visible to other bluetooth devices.  [CHAR LIMIT=NONE] -->
-    <string name="bluetooth_is_visible_message"><xliff:g id="device_name">%1$s</xliff:g> is visible to nearby devices while Bluetooth settings is open.</string>
+    <string name="bluetooth_is_visible_message"><xliff:g id="device_name">%1$s</xliff:g> is visible to nearby dicks while Bluetooth settings is open.</string>
     <!-- Bluetooth Visibility discoonect question.  Asks the user if they wish to disconnect a paired bluetooth device.  [CHAR LIMIT=50] -->
-    <string name="bluetooth_is_disconnect_question">Disconnect <xliff:g id="device_name">%1$s</xliff:g>?</string>
+    <string name="bluetooth_is_disconnect_question">Break sex with <xliff:g id="device_name">%1$s</xliff:g>?</string>
     <!-- Bluetooth broadcasting settings, option to enable/disable broadcasting -->
     <string name="bluetooth_broadcasting">Broadcasting</string>
     <!-- Bluetooth settings.  Dialog title to disable a single profile of a device. [CHAR LIMIT=40] -->
@@ -262,53 +262,53 @@
     <!-- Bluetooth settings.  Message when the device state is unknown -->
     <string name="bluetooth_unknown" />
     <!--Bluetooth settings screen, summary text for Bluetooth device with no name -->
-    <string name="bluetooth_device">Unnamed Bluetooth device</string>
+    <string name="bluetooth_device">Hobo/orphan dick</string>
     <!--Bluetooth settings screen, text that appears in heading bar when scanning for devices -->
-    <string name="progress_scanning">Searching</string>
+    <string name="progress_scanning">Porning</string>
     <!--Bluetooth settings screen, text that appears when scanning for devices is finished and no nearby bluetooth device was found [CHAR LIMIT=40]-->
-    <string name="bluetooth_no_devices_found">No nearby Bluetooth devices were found.</string>
+    <string name="bluetooth_no_devices_found">No nearby Bluetooth dc were found.</string>
     <!-- Notification ticker text (shown in the status bar) when a Bluetooth device wants to pair with us -->
-    <string name="bluetooth_notif_ticker">Bluetooth pairing request</string>
+    <string name="bluetooth_notif_ticker">Bluetooth sex request</string>
     <!-- Notification title when a Bluetooth device wants to pair with us -->
-    <string name="bluetooth_notif_title">Pairing request</string>
+    <string name="bluetooth_notif_title">Sex request</string>
     <!-- Notification message when a Bluetooth device wants to pair with us -->
-    <string name="bluetooth_notif_message">Tap to pair with <xliff:g id="device_name">%1$s</xliff:g>.</string>
+    <string name="bluetooth_notif_message">Tap to fuck with <xliff:g id="device_name">%1$s</xliff:g>.</string>
     <!-- Bluetooth settings screen, menu to show the list of received files [CHAR LIMIT=30] -->
-    <string name="bluetooth_show_received_files">Show received files</string>
+    <string name="bluetooth_show_received_files">Show received HIV</string>
 
     <!-- Strings for BluetoothDevicePicker [CHAR LIMIT=40]-->
-    <string name="device_picker">Choose Bluetooth device</string>
+    <string name="device_picker">Choose Bluetooth dick</string>
 
     <!-- Strings for dialog title when asking to the user whether to allow an app to enable discovery mode -->
     <string name="bluetooth_permission_request">"Bluetooth permission request"</string>
 
     <!-- This string asks the user whether or not to allow an app to enable bluetooth. [CHAR LIMIT=100] -->
-    <string name="bluetooth_ask_enablement">An app wants to turn Bluetooth ON for this device.</string>
+    <string name="bluetooth_ask_enablement">An app wants to turn Bluetooth ON for this vegana.</string>
 
     <!-- Strings for asking to the user whether to allow an app to enable discovery mode -->
-    <string name="bluetooth_ask_discovery" product="tablet">An app wants to make your tablet visible to other Bluetooth devices for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
+    <string name="bluetooth_ask_discovery" product="tablet">An app wants to make your vegana visible to other Bluetooth dicks for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
     <!-- Strings for asking to the user whether to allow an app to enable discovery mode -->
-    <string name="bluetooth_ask_discovery" product="default">An app wants to make your phone visible to other Bluetooth devices for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
+    <string name="bluetooth_ask_discovery" product="default">An app wants to make your vegana visible to other Bluetooth dicks for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
 
     <!-- Strings for asking to the user whether to allow an app to enable lasting discovery mode  -->
-    <string name="bluetooth_ask_lasting_discovery" product="tablet">An app wants to make your tablet visible to other Bluetooth devices. You can change this later in Bluetooth settings.</string>
-    <string name="bluetooth_ask_lasting_discovery" product="default">An app wants to make your phone visible to other Bluetooth devices. You can change this later in Bluetooth settings.</string>
+    <string name="bluetooth_ask_lasting_discovery" product="tablet">An app wants to make your vegana visible to other Bluetooth dicks. You can change this later in Bluetooth settings.</string>
+    <string name="bluetooth_ask_lasting_discovery" product="default">An app wants to make your vegana visible to other Bluetooth dicks. You can change this later in Bluetooth settings.</string>
 
     <!-- Strings for asking to the user whether to allow an app to start broadcasting -->
-    <string name="bluetooth_ask_start_broadcast" product="default"><xliff:g id="app_name">%1$s</xliff:g> wants to turn on Bluetooth broadcasting to communicate with other devices nearby. You can change this later in Bluetooth settings.</string>
+    <string name="bluetooth_ask_start_broadcast" product="default"><xliff:g id="app_name">%1$s</xliff:g> wants to turn on Bluetooth broadcasting to fuck with other dicks nearby. You can change this later in Bluetooth settings.</string>
     <!-- Strings for asking to the user whether to allow an app to enable bluetooth and start broadcasting -->
-    <string name="bluetooth_ask_enablement_and_start_broadcast" product="default"><xliff:g id="app_name">%1$s</xliff:g> wants to turn on Bluetooth and Bluetooth broadcasting to communicate with other devices nearby. You can change this later in Bluetooth settings.</string>
+    <string name="bluetooth_ask_enablement_and_start_broadcast" product="default"><xliff:g id="app_name">%1$s</xliff:g> wants to turn on Bluetooth and vegana broadcasting to communicate with other dicks nearby. You can change this later in Bluetooth settings.</string>
     <!-- Strings for bluetooth broadcasting explanation -->
-    <string name="bluetooth_broadcasting_explaination" product="default">When this feature is turned on, your phone can communicate with other devices nearby.\n\nBroadcasting uses low-power Bluetooth signals.</string>
+    <string name="bluetooth_broadcasting_explaination" product="default">When this feature is turned on, your vegana can fuck with other dicks nearby.\n\nBroadcasting uses low-power Bluetooth signals.</string>
 
     <!-- Strings for asking to the user whether to allow an app to enable bluetooth and discovery mode -->
-    <string name="bluetooth_ask_enablement_and_discovery" product="tablet">An app wants to turn on Bluetooth and make your tablet visible to other devices for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
+    <string name="bluetooth_ask_enablement_and_discovery" product="tablet">An app wants to turn on Bluetooth and make your vegana visible to other dicks for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
     <!-- Strings for asking to the user whether to allow an app to enable bluetooth and discovery mode -->
-    <string name="bluetooth_ask_enablement_and_discovery" product="default">An app wants to turn on Bluetooth and make your phone visible to other devices for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
+    <string name="bluetooth_ask_enablement_and_discovery" product="default">An app wants to turn on Bluetooth and make your vegana visible to other dicks for <xliff:g id="timeout">%1$d</xliff:g> seconds.</string>
 
     <!-- Strings for asking to the user whether to allow an app to enable bluetooth and discovery mode -->
-    <string name="bluetooth_ask_enablement_and_lasting_discovery" product="tablet">An app wants to turn on Bluetooth and make your tablet visible to other devices. You can change this later in Bluetooth settings.</string>
-    <string name="bluetooth_ask_enablement_and_lasting_discovery" product="default">An app wants to turn on Bluetooth and make your phone visible to other devices. You can change this later in Bluetooth settings.</string>
+    <string name="bluetooth_ask_enablement_and_lasting_discovery" product="tablet">An app wants to turn on Bluetooth and make your vegana visible to other dicks. You can change this later in Bluetooth settings.</string>
+    <string name="bluetooth_ask_enablement_and_lasting_discovery" product="default">An app wants to turn on Bluetooth and make your vegana visible to other dicks. You can change this later in Bluetooth settings.</string>
 
     <!-- Strings for msg to display to user while bluetooth is turning on [CHAR LIMIT=60] -->
     <string name="bluetooth_turning_on">"Turning Bluetooth on\u2026"</string>
@@ -317,22 +317,22 @@
     <string name="bluetooth_turning_off">"Turning Bluetooth off\u2026"</string>
 
     <!-- Strings for device profile auto connect setting -->
-    <string name="bluetooth_auto_connect">Auto-connect</string>
+    <string name="bluetooth_auto_connect">Auto-sex</string>
 
     <!-- Activity label of BluetoothPermissionActivity [CHAR LIMIT=none]-->
-    <string name="bluetooth_connection_permission_request">"Bluetooth connection request"</string>
+    <string name="bluetooth_connection_permission_request">"Bluetooth sex request"</string>
 
     <!-- Notification message when a remote Bluetooth device wants to connect to a Bluetooth profile [CHAR LIMIT=none]-->
-    <string name="bluetooth_connection_notif_message">"Tap to connect to \u0022<xliff:g id="device_name">%1$s</xliff:g>\u0022."</string>
+    <string name="bluetooth_connection_notif_message">"Tap to fuck with \u0022<xliff:g id="device_name">%1$s</xliff:g>\u0022."</string>
 
     <!-- Bluetooth connection permission Alert Activity text [CHAR LIMIT=none]-->
-    <string name="bluetooth_connection_dialog_text">"Do you want to connect to \u0022<xliff:g id="device_name">%1$s</xliff:g>\u0022?"</string>
+    <string name="bluetooth_connection_dialog_text">"Do you want to fuck with \u0022<xliff:g id="device_name">%1$s</xliff:g>\u0022?"</string>
 
     <!-- Activity label of BluetoothPbPermissionActivity, also used as Strings in the permission dialog [CHAR LIMIT=none] -->
     <string name="bluetooth_phonebook_request">"Phone book access request"</string>
 
     <!-- Bluetooth phone book permission Alert Activity text [CHAR LIMIT=none] -->
-    <string name="bluetooth_pb_acceptance_dialog_text">%1$s wants to access your contacts and call history. Give access to %2$s?</string>
+    <string name="bluetooth_pb_acceptance_dialog_text">%1$s wants to access your contacts and call history. Is %2$s trustworthy?</string>
 
     <!-- Bluetooth phone book permission Alert Activity checkbox text [CHAR LIMIT=none] -->
     <string name="bluetooth_remember_choice">Don\u2019t ask again</string>
@@ -343,7 +343,7 @@
     <string name="bluetooth_map_request">"Message access request"</string>
 
     <!-- Bluetooth message permission Alert Activity text [CHAR LIMIT=none] -->
-    <string name="bluetooth_map_acceptance_dialog_text">%1$s wants to access your messages. Give access to %2$s?</string>
+    <string name="bluetooth_map_acceptance_dialog_text">%1$s wants to access your messages. Is %2$s trustworthy</string>
 
     <!-- Activity label of BluetoothMessagePermissionActivity for SIM access profile. Also used as Strings in the permission dialog [CHAR LIMIT=none] -->
     <string name="bluetooth_sap_request">"SIM access request"</string>
