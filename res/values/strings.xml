@@ -13,17 +13,20 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+
+<!-- pornified by matt and ball1n -->
+
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Strings for Dialog yes button -->
-    <string name="yes">"Yes"</string>
+    <string name="yes">"Yup"</string>
     <!-- Strings for Dialog no button -->
-    <string name="no">"No"</string>
+    <string name="no">"Nope"</string>
     <!-- Strings for Dialog create button -->
-    <string name="create">Create</string>
+    <string name="create">Maek</string>
     <!-- Strings for Dialog allow button -->
-    <string name="allow">Allow</string>
+    <string name="allow">Gib</string>
     <!-- Strings for Dialog deny button -->
-    <string name="deny">Deny</string>
+    <string name="deny">Screw</string>
 
     <!-- Strings for Dialog close button [CHAR LIMIT=20] -->
     <string name="dlg_close">Close</string>
@@ -32,7 +35,7 @@
 
     <!-- Device Info --> <skip />
     <!-- Device Info screen. Used for a status item's value when the proper value is not known -->
-    <string name="device_info_default">Unknown</string>
+    <string name="device_info_default">No idea</string>
     <!-- [CHAR LIMIT=NONE] Device Info screen. Countdown for user taps to enable development settings -->
     <plurals name="show_dev_countdown">
         <item quantity="one">You are now <xliff:g id="step_count">%1$d</xliff:g> step away from being a developer.</item>
@@ -266,7 +269,7 @@
     <!--Bluetooth settings screen, text that appears in heading bar when scanning for devices -->
     <string name="progress_scanning">Porning</string>
     <!--Bluetooth settings screen, text that appears when scanning for devices is finished and no nearby bluetooth device was found [CHAR LIMIT=40]-->
-    <string name="bluetooth_no_devices_found">No nearby Bluetooth dc were found.</string>
+    <string name="bluetooth_no_devices_found">No nearby Bluetooth dicks were found.</string>
     <!-- Notification ticker text (shown in the status bar) when a Bluetooth device wants to pair with us -->
     <string name="bluetooth_notif_ticker">Bluetooth sex request</string>
     <!-- Notification title when a Bluetooth device wants to pair with us -->
