@@ -66,7 +66,7 @@
     <string name="radio_info_data_connection_disable">Disable Data Connection</string>
 
     <!-- VoLTE provisioning flag on. Only shown in diagnostic screen, so precise translation is not needed. -->
-    <string name="volte_provisioned_switch_string">VoLTE Provisioned</string>
+    <string name="volte_provisioned_switch_string">BhoLTE Provisioned</string>
 
     <!-- Video calling provisioning flag on. Only shown in diagnostic screen, so precise translation is not needed. -->
     <string name="vt_provisioned_switch_string">Video Calling Provisioned</string>
@@ -186,23 +186,29 @@
     </string>
     <string name="font_size_preview_text_subtitle"
             translation_description="Subtitle text in sample text used to illustrate how the currently selected font size will appear to the user. NOTE: Translate manually. No not adopt any copyrighted material for translation.">
-        Chapter 11: The Wonderful Emerald City of Oz</string>
+        Smash Mouth - All Star</string>
     <string name="font_size_preview_text_body"
             translation_description="Text in sample text used to illustrate how the currently selected font size will appear to the user. NOTE: Translate manually. No not adopt any copyrighted material for translation.">
-        Even with eyes protected by the green spectacles Dorothy and her friends were at first dazzled by the brilliancy of the wonderful City.
-        The streets were lined with beautiful houses all built of green marble and studded everywhere with sparkling emeralds.
-        They walked over a pavement of the same green marble, and where the blocks were joined together were rows of emeralds, set closely, and glittering in the brighness of the sun.
-        The window panes were of green glass; even the sky above the City had a green tint, and the rays of the sun were green.
-        \n\nThere were many people, men, women and children, walking about, and these were all dressed in green clothes and had greenish skins.
-        They looked at Dorothy and her strangely assorted company with wondering eyes, and the children all ran away and hid behind their mothers when they saw the Lion; but no one spoke to them.
-        Many shops stood in the street, and Dorothy saw that everything in them was green.
-        Green candy and green pop-corn were offered for sale, as well as green shoes, green hats and green clothes of all sorts.
-        At one place a man was selling green lemonade, and when the children bought it Dorothy could see that they paid for it with green pennies.
-        \n\nThere seemed to be no horses nor animals of any kind; the men carried things around in little green carts, which they pushed before them.
-        Everyone seeemed happy and contented and prosperous.
+        Somebody once told me, the world is gonna roll me\n
+I ain't the sharpest tool in the shed\n
+She was looking kind of dumb with her finger and her thumb\n 
+In the shape of an \"L\" on her forehead\n
+Well, the years start coming and they don\'t stop coming\n
+Fed to the rules and I hit the ground running\n
+Didn\'t make sense not to live for fun\n
+Your brain gets smart but your head gets dumb\n 
+So much to do, so much to see\n 
+So what\'s wrong with taking the back streets\n 
+You'll never know if you don\'t go\n
+You'll never shine if you don\'t glow\n
+Hey now, you\'re an All Star, get your game on, go play\n 
+Hey now, you\'re a Rock Star, get the show on, get paid\n
+All that glitters is gold\n
+Only shooting stars break the mold\n 
+
     </string>
     <!-- Button. Chosen when they want to save the chosen text size. -->
-    <string name="font_size_save">OK</string>
+    <string name="font_size_save">K</string>
 
     <!-- Title for a notification shown. [CHAR LIMIT=25] -->
     <string name="sdcard_setting" product="nosdcard">PornDrive</string>
