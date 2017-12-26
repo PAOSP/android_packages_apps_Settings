@@ -24,10 +24,10 @@
     <!-- [CHAR LIMIT=NONE] Device Info screen. Confirmation that developer settings are enabled -->
     <string name="show_dev_on_cm">Ohhh, yes developer chan!</string>
     <!-- [CHAR LIMIT=NONE] Device Info screen. Okay we get it, stop pressing, you already have it on -->
-    <string name="show_dev_already_cm">You're fckin developer, what more do you want?</string>
+    <string name="show_dev_already_cm">You\'re fckin developer, what more do you want?</string>
 
     <!-- Launch Dev Tools -->
-    <string name="development_tools_title">Destroing tools</string>
+    <string name="development_tools_title">Destroying tools</string>
 
     <!-- Setting checkbox title for root access -->
     <string name="root_access">Root access</string>
@@ -44,7 +44,7 @@
 
     <!-- About phone screen, PornAOSP version -->
     <string name="mod_version">PornAOSP version</string>
-    <string name="mod_version_default">Unknown</string>
+    <string name="mod_version_default">no info 4 u</string>
 
     <!-- About phone screen, Device model -->
     <string name="device_model">Device model</string>
