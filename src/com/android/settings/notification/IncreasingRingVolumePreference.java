@@ -26,6 +26,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.provider.Settings;
+import android.support.v4.content.res.TypedArrayUtils;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.preference.PreferenceViewHolder;
@@ -37,14 +38,15 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.android.settings.R;
-import cyanogenmod.providers.CMSettings;
+
+import lineageos.providers.LineageSettings;
 
 public class IncreasingRingVolumePreference extends Preference implements
         Handler.Callback, SeekBar.OnSeekBarChangeListener {
     private static final String TAG = "IncreasingRingMinVolumePreference";
 
     public interface Callback {
-        void onStartingSample();
+        void onSampleStarting(IncreasingRingVolumePreference pref);
     }
 
     private SeekBar mStartVolumeSeekBar;
@@ -68,7 +70,8 @@ public class IncreasingRingVolumePreference extends Preference implements
     }
 
     public IncreasingRingVolumePreference(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
+        this(context, attrs, TypedArrayUtils.getAttr(
+                context, R.attr.customPreferenceStyle, android.R.attr.preferenceStyle));
     }
 
     public IncreasingRingVolumePreference(Context context, AttributeSet attrs,
@@ -132,10 +135,10 @@ public class IncreasingRingVolumePreference extends Preference implements
         mRampUpTimeValue = (TextView) holder.findViewById(R.id.ramp_up_time_value);
 
         final ContentResolver cr = getContext().getContentResolver();
-        float startVolume = CMSettings.System.getFloat(cr,
-                CMSettings.System.INCREASING_RING_START_VOLUME, 0.1f);
-        int rampUpTime = CMSettings.System.getInt(cr,
-                CMSettings.System.INCREASING_RING_RAMP_UP_TIME, 10);
+        float startVolume = LineageSettings.System.getFloat(cr,
+                LineageSettings.System.INCREASING_RING_START_VOLUME, 0.1f);
+        int rampUpTime = LineageSettings.System.getInt(cr,
+                LineageSettings.System.INCREASING_RING_RAMP_UP_TIME, 10);
 
         mStartVolumeSeekBar.setProgress(Math.round(startVolume * 1000F));
         mStartVolumeSeekBar.setOnSeekBarChangeListener(this);
@@ -160,15 +163,15 @@ public class IncreasingRingVolumePreference extends Preference implements
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
         ContentResolver cr = getContext().getContentResolver();
         if (fromTouch && seekBar == mStartVolumeSeekBar) {
-            CMSettings.System.putFloat(cr, CMSettings.System.INCREASING_RING_START_VOLUME,
-                        (float) progress / 1000F);
+            LineageSettings.System.putFloat(cr,
+                    LineageSettings.System.INCREASING_RING_START_VOLUME, (float) progress / 1000F);
         } else if (seekBar == mRampUpTimeSeekBar) {
             int seconds = (progress + 1) * 5;
             mRampUpTimeValue.setText(
                     Formatter.formatShortElapsedTime(getContext(), seconds * 1000));
             if (fromTouch) {
-                CMSettings.System.putInt(cr,
-                        CMSettings.System.INCREASING_RING_RAMP_UP_TIME, seconds);
+                LineageSettings.System.putInt(cr,
+                        LineageSettings.System.INCREASING_RING_RAMP_UP_TIME, seconds);
             }
         }
     }
@@ -213,7 +216,7 @@ public class IncreasingRingVolumePreference extends Preference implements
         }
         if (!isSamplePlaying()) {
             if (mCallback != null) {
-                mCallback.onStartingSample();
+                mCallback.onSampleStarting(this);
             }
             try {
                 mRingtone.play();
@@ -253,3 +256,4 @@ public class IncreasingRingVolumePreference extends Preference implements
         }
     }
 }
+

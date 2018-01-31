@@ -31,8 +31,8 @@ import android.hardware.input.KeyboardLayout;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.UserHandle;
+import android.provider.SearchIndexableResource;
 import android.provider.Settings.Secure;
-import android.provider.Settings.System;
 import android.support.v14.preference.SwitchPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.Preference.OnPreferenceChangeListener;
@@ -45,14 +45,18 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import com.android.internal.inputmethod.InputMethodUtils;
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.util.Preconditions;
 import com.android.settings.R;
 import com.android.settings.Settings;
 import com.android.settings.SettingsPreferenceFragment;
+import com.android.settings.search.BaseSearchIndexProvider;
+import com.android.settings.search.Indexable;
+import com.android.settingslib.inputmethod.InputMethodAndSubtypeUtil;
 
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,15 +64,12 @@ import java.util.List;
 import java.util.Objects;
 
 public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
-        implements InputManager.InputDeviceListener {
+        implements InputManager.InputDeviceListener, Indexable {
 
     private static final String KEYBOARD_ASSISTANCE_CATEGORY = "keyboard_assistance_category";
     private static final String SHOW_VIRTUAL_KEYBOARD_SWITCH = "show_virtual_keyboard_switch";
     private static final String KEYBOARD_SHORTCUTS_HELPER = "keyboard_shortcuts_helper";
     private static final String IM_SUBTYPE_MODE_KEYBOARD = "keyboard";
-    private static final String AUTO_REPLACE_SWITCH = "auto_replace";
-    private static final String AUTO_CAPS_SWITCH = "auto_caps";
-    private static final String AUTO_PUNCTUATE_SWITCH = "auto_punctuate";
 
     @NonNull
     private final List<HardKeyboardDeviceInfo> mLastHardKeyboards = new ArrayList<>();
@@ -112,46 +113,6 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
                         return true;
                     }
                 });
-
-        Preference.OnPreferenceClickListener textPreferenceClickListener =
-                new Preference.OnPreferenceClickListener() {
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        SwitchPreference pref = (SwitchPreference) preference;
-                        if (AUTO_REPLACE_SWITCH.equals(pref.getKey())) {
-                            System.putInt(getContentResolver(), System.TEXT_AUTO_REPLACE,
-                                    pref.isChecked() ? 1 : 0);
-                        } else if (AUTO_CAPS_SWITCH.equals(pref.getKey())) {
-                            System.putInt(getContentResolver(), System.TEXT_AUTO_CAPS,
-                                    pref.isChecked() ? 1 : 0);
-                        } else if (AUTO_PUNCTUATE_SWITCH.equals(pref.getKey())) {
-                            System.putInt(getContentResolver(), System.TEXT_AUTO_PUNCTUATE,
-                                    pref.isChecked() ? 1 : 0);
-                        }
-                        return true;
-                    }
-                };
-
-        SwitchPreference autoReplaceSwitch = Preconditions.checkNotNull(
-                (SwitchPreference) mKeyboardAssistanceCategory.findPreference(
-                        AUTO_REPLACE_SWITCH));
-        autoReplaceSwitch.setChecked(System.getInt(getContentResolver(),
-                System.TEXT_AUTO_REPLACE, 1) > 0);
-        autoReplaceSwitch.setOnPreferenceClickListener(textPreferenceClickListener);
-
-        SwitchPreference autoCapsSwitch = Preconditions.checkNotNull(
-                (SwitchPreference) mKeyboardAssistanceCategory.findPreference(
-                        AUTO_CAPS_SWITCH));
-        autoCapsSwitch.setChecked(System.getInt(getContentResolver(),
-                System.TEXT_AUTO_CAPS, 1) > 0);
-        autoCapsSwitch.setOnPreferenceClickListener(textPreferenceClickListener);
-
-        SwitchPreference autoPunctuateSwitch = Preconditions.checkNotNull(
-                (SwitchPreference) mKeyboardAssistanceCategory.findPreference(
-                        AUTO_PUNCTUATE_SWITCH));
-        autoPunctuateSwitch.setChecked(System.getInt(getContentResolver(),
-                System.TEXT_AUTO_PUNCTUATE, 1) > 0);
-        autoPunctuateSwitch.setOnPreferenceClickListener(textPreferenceClickListener);
     }
 
     @Override
@@ -176,7 +137,7 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
         unregisterShowVirtualKeyboardSettingsObserver();
     }
 
-    public void onLoadFinishedInternal(
+    private void onLoadFinishedInternal(
             final int loaderId, @NonNull final List<Keyboards> keyboardsList) {
         if (!mLoaderIDs.remove(loaderId)) {
             // Already destroyed loader.  Ignore.
@@ -233,13 +194,13 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.PHYSICAL_KEYBOARDS;
     }
 
     @NonNull
-    private static ArrayList<HardKeyboardDeviceInfo> getHardKeyboards() {
-        final ArrayList<HardKeyboardDeviceInfo> keyboards = new ArrayList<>();
+    public static List<HardKeyboardDeviceInfo> getHardKeyboards() {
+        final List<HardKeyboardDeviceInfo> keyboards = new ArrayList<>();
         final int[] devicesIds = InputDevice.getDeviceIds();
         for (int deviceId : devicesIds) {
             final InputDevice device = InputDevice.getDevice(deviceId);
@@ -251,7 +212,7 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
     }
 
     private void updateHardKeyboards() {
-        final ArrayList<HardKeyboardDeviceInfo> newHardKeyboards = getHardKeyboards();
+        final List<HardKeyboardDeviceInfo> newHardKeyboards = getHardKeyboards();
         if (!Objects.equals(newHardKeyboards, mLastHardKeyboards)) {
             clearLoader();
             mLastHardKeyboards.clear();
@@ -269,10 +230,10 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
             @Nullable InputMethodSubtype imSubtype) {
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.setClass(getActivity(), Settings.KeyboardLayoutPickerActivity.class);
-        intent.putExtra(KeyboardLayoutPickerFragment2.EXTRA_INPUT_DEVICE_IDENTIFIER,
+        intent.putExtra(KeyboardLayoutPickerFragment.EXTRA_INPUT_DEVICE_IDENTIFIER,
                 inputDeviceIdentifier);
-        intent.putExtra(KeyboardLayoutPickerFragment2.EXTRA_INPUT_METHOD_INFO, imi);
-        intent.putExtra(KeyboardLayoutPickerFragment2.EXTRA_INPUT_METHOD_SUBTYPE, imSubtype);
+        intent.putExtra(KeyboardLayoutPickerFragment.EXTRA_INPUT_METHOD_INFO, imi);
+        intent.putExtra(KeyboardLayoutPickerFragment.EXTRA_INPUT_METHOD_SUBTYPE, imSubtype);
         startActivity(intent);
     }
 
@@ -328,6 +289,7 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
         final PhysicalKeyboardFragment mPhysicalKeyboardFragment;
         @NonNull
         final List<HardKeyboardDeviceInfo> mHardKeyboards;
+
         public Callbacks(
                 @NonNull Context context,
                 @NonNull PhysicalKeyboardFragment physicalKeyboardFragment,
@@ -572,4 +534,14 @@ public final class PhysicalKeyboardFragment extends SettingsPreferenceFragment
         }
     }
 
+    public static final Indexable.SearchIndexProvider SEARCH_INDEX_DATA_PROVIDER =
+            new BaseSearchIndexProvider() {
+                @Override
+                public List<SearchIndexableResource> getXmlResourcesToIndex(
+                        Context context, boolean enabled) {
+                    final SearchIndexableResource sir = new SearchIndexableResource(context);
+                    sir.xmlResId = R.xml.physical_keyboard_settings;
+                    return Arrays.asList(sir);
+                }
+            };
 }

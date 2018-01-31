@@ -14,29 +14,41 @@
      limitations under the License.
 -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="?android:attr/listPreferredItemHeight"
+    android:minHeight="?android:attr/listPreferredItemHeightSmall"
     android:gravity="center_vertical"
-    android:paddingEnd="?android:attr/scrollbarSize">
+    android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+    android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+    android:background="?android:attr/selectableItemBackground"
+    android:clipToPadding="false">
 
-    <ImageView
-        android:id="@+android:id/icon"
+    <LinearLayout
+        android:id="@+id/icon_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:src="@drawable/ring_notif_increasing"
-        android:minWidth="48dp" />
+        android:minWidth="44dp"
+        android:gravity="start|center_vertical"
+        android:orientation="horizontal"
+        android:paddingEnd="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+        <com.android.internal.widget.PreferenceImageView
+            android:id="@android:id/icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="48dp"
+            android:maxHeight="48dp"/>
+    </LinearLayout>
 
     <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dip"
-        android:layout_marginEnd="8dip"
-        android:layout_marginTop="6dip"
-        android:layout_marginBottom="6dip"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
 
         <TextView android:id="@android:id/title"
             android:layout_width="wrap_content"
@@ -51,6 +63,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@android:id/title"
             android:layout_alignStart="@android:id/title"
+            android:paddingStart="18dp"
             android:text="@string/increasing_ring_min_volume_title"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:textColor="?android:attr/textColorSecondary"
@@ -68,6 +81,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/start_volume"
             android:layout_alignStart="@android:id/title"
+            android:paddingStart="18dp"
             android:text="@string/increasing_ring_ramp_up_time_title"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:textColor="?android:attr/textColorSecondary"

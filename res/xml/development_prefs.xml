@@ -16,11 +16,13 @@
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
+        android:key="development_prefs_screen"
         android:title="@string/development_settings_title">
 
     <PreferenceScreen
             android:key="development_tools"
             android:title="@string/development_tools_title"
+            android:icon="@drawable/ic_development"
             android:persistent="false" >
         <intent
                 android:action="android.settings.development.LAUNCH_TOOLS"
@@ -31,15 +33,15 @@
     <com.android.settings.BugreportPreference
             android:key="bugreport"
             android:title="@*android:string/bugreport_title"
+            android:icon="@drawable/ic_bugreport"
             android:dialogTitle="@*android:string/bugreport_title" />
 
-    <cyanogenmod.preference.CMSecureSettingSwitchPreference
+    <lineageos.preference.LineageSecureSettingSwitchPreference
             android:key="advanced_reboot"
             android:title="@string/advanced_reboot_title"
-            android:summary="@string/advanced_reboot_summary"
-            android:defaultValue="true"/>
+            android:summary="@string/advanced_reboot_summary" />
 
-    <PreferenceScreen
+    <Preference
             android:key="local_backup_password"
             android:title="@string/local_backup_password_title"
             android:summary="@string/local_backup_password_summary_none"
@@ -48,7 +50,7 @@
                 android:action="android.settings.privacy.SET_FULL_BACKUP_PASSWORD"
                 android:targetPackage="com.android.settings"
                 android:targetClass="com.android.settings.SetFullBackupPassword" />
-    </PreferenceScreen>
+    </Preference>
 
     <com.android.settingslib.RestrictedSwitchPreference
         android:key="keep_screen_on"
@@ -74,33 +76,27 @@
         android:summary="@string/oem_unlock_enable_summary"
         settings:useAdditionalSummary="true"/>
 
-    <PreferenceScreen
+    <Preference
         android:key="running_apps"
         android:title="@string/runningservices_settings_title"
         android:summary="@string/runningservices_settings_summary"
         android:fragment="com.android.settings.applications.RunningServices" />
 
-    <PreferenceScreen
+    <Preference
         android:key="convert_to_file_encryption"
         android:title="@string/convert_to_file_encryption"
         android:summary="@string/convert_to_file_encryption_enabled"
         android:fragment="com.android.settings.applications.ConvertToFbe" />
 
-    <com.android.settings.ColorModePreference
-        android:key="color_mode"
+    <com.android.settings.development.ColorModePreference
+        android:key="picture_color_mode"
         android:title="@string/picture_color_mode"
         android:summary="@string/picture_color_mode_desc" />
 
-    <ListPreference
-        android:key="select_webview_provider"
+    <Preference android:key="select_webview_provider"
         android:title="@string/select_webview_provider_title"
         android:dialogTitle="@string/select_webview_provider_dialog_title"
-        android:summary="%s" />
-
-    <SwitchPreference
-        android:key="enable_webview_multiprocess"
-        android:title="@string/enable_webview_multiprocess"
-        android:summary="@string/enable_webview_multiprocess_desc" />
+        android:fragment="com.android.settings.webview.WebViewAppPicker" />
 
     <SwitchPreference
         android:key="color_temperature"
@@ -111,42 +107,29 @@
         android:key="ota_disable_automatic_update"
         android:title="@string/ota_disable_automatic_update" />
 
-    <PreferenceScreen
+    <Preference
         android:key="demo_mode"
         android:title="@string/demo_mode">
         <intent android:action="com.android.settings.action.DEMO_MODE" />
-    </PreferenceScreen>
-
-    <ListPreference
-        android:key="root_access"
-        android:title="@string/root_access"
-        android:persistent="false" />
+    </Preference>
 
     <Preference
-        android:key="root_appops"
-        android:title="@string/root_appops_title"
-        android:summary="@string/root_appops_summary" />
-
-    <SwitchPreference
-        android:key="update_recovery"
-        android:title="@string/update_recovery_title"
-        android:summary="@string/update_recovery_summary" />
-
-    <cyanogenmod.preference.SystemSettingSwitchPreference
-        android:key="disable_fc_notifications"
-        android:title="@string/disable_fc_notifications_title"
-        android:summary="@string/disable_fc_notifications_summary"
-        android:defaultValue="false" />
+        android:key="quick_settings_tiles"
+        android:title="@string/quick_settings_developer_tiles">
+        <intent
+            android:targetPackage="com.android.settings"
+            android:targetClass="com.android.settings.qstile.DevelopmentTileConfigActivity" />
+    </Preference>
 
     <PreferenceCategory android:key="debug_debugging_category"
             android:title="@string/debug_debugging_category">
 
         <SwitchPreference
             android:key="enable_adb"
-            android:title="@string/enable_adb_cm"
-            android:summary="@string/enable_adb_summary_cm" />
+            android:title="@string/adb_enable"
+            android:summary="@string/adb_enable_summary" />
 
-        <cyanogenmod.preference.CMSecureSettingSwitchPreference
+        <lineageos.preference.LineageSecureSettingSwitchPreference
             android:key="adb_notify"
             android:title="@string/adb_notify"
             android:summary="@string/adb_notify_summary"
@@ -162,17 +145,6 @@
         <Preference android:key="clear_adb_keys"
                 android:title="@string/clear_adb_keys" />
 
-        <com.android.settings.HostnamePreference
-            android:key="device_hostname"
-            android:title="@string/device_hostname"
-            android:dialogTitle="@string/device_hostname"
-            android:positiveButtonText="@string/wifi_save"
-            android:negativeButtonText="@string/wifi_cancel"
-            android:selectAllOnFocus="true"
-            android:imeOptions="actionDone"
-            android:inputType="textNoSuggestions"
-            android:persistent="false" />
-
         <SwitchPreference
             android:key="enable_terminal"
             android:title="@string/enable_terminal_title"
@@ -183,14 +155,14 @@
             android:title="@string/bugreport_in_power"
             android:summary="@string/bugreport_in_power_summary"/>
 
-        <PreferenceScreen android:key="mock_location_app"
+        <Preference android:key="mock_location_app"
             android:title="@string/mock_location_app" />
 
         <SwitchPreference
                 android:key="debug_view_attributes"
                 android:title="@string/debug_view_attributes" />
 
-        <PreferenceScreen android:key="debug_app"
+        <Preference android:key="debug_app"
                 android:title="@string/debug_app" />
 
         <SwitchPreference
@@ -198,7 +170,7 @@
             android:title="@string/wait_for_debugger"
             android:summary="@string/wait_for_debugger_summary"/>
 
-        <SwitchPreference
+        <com.android.settingslib.RestrictedSwitchPreference
             android:key="verify_apps_over_usb"
             android:title="@string/verify_apps_over_usb_title"
             android:summary="@string/verify_apps_over_usb_summary"/>
@@ -218,9 +190,17 @@
             android:entryValues="@array/select_logpersist_values" />
 
         <SwitchPreference
-            android:key="force_authorize_substratum_packages"
-            android:title="@string/force_authorize_substratum_packages_title"
-            android:summary="@string/force_authorize_substratum_packages_summary" />
+            android:key="telephony_monitor_switch"
+            android:title="@string/telephony_monitor_switch"
+            android:summary="@string/telephony_monitor_switch_summary"/>
+
+        <SwitchPreference
+            android:key="camera_laser_sensor_switch"
+            android:title="@string/camera_laser_sensor_switch" />
+
+        <SwitchPreference
+            android:key="camera_hal_hdrplus_switch"
+            android:title="@string/camera_hal_hdrplus_switch" />
 
     </PreferenceCategory>
 
@@ -247,10 +227,15 @@
             android:title="@string/wifi_allow_scan_with_traffic"
             android:summary="@string/wifi_allow_scan_with_traffic_summary"/>
 
-       <SwitchPreference
+        <SwitchPreference
             android:key="mobile_data_always_on"
             android:title="@string/mobile_data_always_on"
             android:summary="@string/mobile_data_always_on_summary"/>
+
+        <SwitchPreference
+            android:key="tethering_hardware_offload"
+            android:title="@string/tethering_hardware_offload"
+            android:summary="@string/tethering_hardware_offload_summary"/>
 
         <ListPreference
             android:key="select_usb_configuration"
@@ -259,22 +244,63 @@
             android:entries="@array/usb_configuration_titles"
             android:entryValues="@array/usb_configuration_values" />
 
-        <cyanogenmod.preference.SystemSettingSwitchPreference
-            android:key="mtp_dirty_hack"
-            android:title="@string/enable_mtp_dirtyhack_title"
-            android:summary="@string/enable_mtp_dirtyhack_summary"
-            android:defaultValue="false" />
-
-        <cyanogenmod.preference.SystemSettingSwitchPreference
-            android:key="show_usb_mode_dialog"
-            android:title="@string/usb_mode_dialog_show_title"
-            android:summary="@string/usb_mode_dialog_show_summary"
-            android:defaultValue="false" />
+        <SwitchPreference
+            android:key="bluetooth_show_devices_without_names"
+            android:title="@string/bluetooth_show_devices_without_names"
+            android:summary="@string/bluetooth_show_devices_without_names_summary"/>
 
         <SwitchPreference
             android:key="bluetooth_disable_absolute_volume"
             android:title="@string/bluetooth_disable_absolute_volume"
             android:summary="@string/bluetooth_disable_absolute_volume_summary"/>
+
+        <SwitchPreference
+            android:key="bluetooth_enable_inband_ringing"
+            android:title="@string/bluetooth_enable_inband_ringing"
+            android:summary="@string/bluetooth_enable_inband_ringing_summary"/>
+
+        <ListPreference
+            android:key="bluetooth_select_avrcp_version"
+            android:title="@string/bluetooth_select_avrcp_version_string"
+            android:dialogTitle="@string/bluetooth_select_avrcp_version_dialog_title"
+            android:entries="@array/bluetooth_avrcp_versions"
+            android:entryValues="@array/bluetooth_avrcp_version_values" />
+
+        <ListPreference
+            android:key="bluetooth_select_a2dp_codec"
+            android:title="@string/bluetooth_select_a2dp_codec_type"
+            android:dialogTitle="@string/bluetooth_select_a2dp_codec_type_dialog_title"
+            android:entries="@array/bluetooth_a2dp_codec_titles"
+            android:entryValues="@array/bluetooth_a2dp_codec_values" />
+
+        <ListPreference
+            android:key="bluetooth_select_a2dp_sample_rate"
+            android:title="@string/bluetooth_select_a2dp_codec_sample_rate"
+            android:dialogTitle="@string/bluetooth_select_a2dp_codec_sample_rate_dialog_title"
+            android:entries="@array/bluetooth_a2dp_codec_sample_rate_titles"
+            android:entryValues="@array/bluetooth_a2dp_codec_sample_rate_values" />
+
+        <ListPreference
+            android:key="bluetooth_select_a2dp_bits_per_sample"
+            android:title="@string/bluetooth_select_a2dp_codec_bits_per_sample"
+            android:dialogTitle="@string/bluetooth_select_a2dp_codec_bits_per_sample_dialog_title"
+            android:entries="@array/bluetooth_a2dp_codec_bits_per_sample_titles"
+            android:entryValues="@array/bluetooth_a2dp_codec_bits_per_sample_values" />
+
+        <ListPreference
+            android:key="bluetooth_select_a2dp_channel_mode"
+            android:title="@string/bluetooth_select_a2dp_codec_channel_mode"
+            android:dialogTitle="@string/bluetooth_select_a2dp_codec_channel_mode_dialog_title"
+            android:entries="@array/bluetooth_a2dp_codec_channel_mode_titles"
+            android:entryValues="@array/bluetooth_a2dp_codec_channel_mode_values" />
+
+        <ListPreference
+            android:key="bluetooth_select_a2dp_ldac_playback_quality"
+            android:title="@string/bluetooth_select_a2dp_codec_ldac_playback_quality"
+            android:dialogTitle="@string/bluetooth_select_a2dp_codec_ldac_playback_quality_dialog_title"
+            android:entries="@array/bluetooth_a2dp_codec_ldac_playback_quality_titles"
+            android:entryValues="@array/bluetooth_a2dp_codec_ldac_playback_quality_values" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:key="debug_input_category"
@@ -313,20 +339,20 @@
         <ListPreference
             android:key="window_animation_scale"
             android:title="@string/window_animation_scale_title"
-            android:entries="@array/window_animation_scale_entries_aosp"
-            android:entryValues="@array/window_animation_scale_values_aosp" />
+            android:entries="@array/window_animation_scale_entries"
+            android:entryValues="@array/window_animation_scale_values" />
 
         <ListPreference
             android:key="transition_animation_scale"
             android:title="@string/transition_animation_scale_title"
-            android:entries="@array/transition_animation_scale_entries_aosp"
-            android:entryValues="@array/transition_animation_scale_values_aosp" />
+            android:entries="@array/transition_animation_scale_entries"
+            android:entryValues="@array/transition_animation_scale_values" />
 
         <ListPreference
             android:key="animator_duration_scale"
             android:title="@string/animator_duration_scale_title"
-            android:entries="@array/animator_duration_scale_entries_aosp"
-            android:entryValues="@array/animator_duration_scale_values_aosp" />
+            android:entries="@array/animator_duration_scale_entries"
+            android:entryValues="@array/animator_duration_scale_values" />
 
         <ListPreference
             android:key="overlay_display_devices"
@@ -387,6 +413,12 @@
                 android:summary="%s"
                 android:title="@string/simulate_color_space" />
 
+        <ListPreference
+                android:key="debug_hw_renderer"
+                android:title="@string/debug_hw_renderer"
+                android:entries="@array/debug_hw_renderer_entries"
+                android:entryValues="@array/debug_hw_renderer_values" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:key="media_category"
@@ -406,11 +438,6 @@
             android:key="strict_mode"
             android:title="@string/strict_mode"
             android:summary="@string/strict_mode_summary"/>
-
-        <SwitchPreference
-            android:key="show_cpu_info"
-            android:title="@string/show_cpu_info"
-            android:summary="@string/show_cpu_info_summary"/>
 
         <ListPreference
             android:key="track_frame_time"
@@ -434,20 +461,27 @@
             android:entries="@array/app_process_limit_entries"
             android:entryValues="@array/app_process_limit_values" />
 
-        <!-- hiding for now.
+
         <Preference
                 android:key="background_check"
+                android:fragment="com.android.settings.applications.BackgroundCheckSummary"
                 android:title="@string/background_check_pref" />
-        -->
+
 
         <SwitchPreference
             android:key="show_all_anrs"
             android:title="@string/show_all_anrs"
             android:summary="@string/show_all_anrs_summary"/>
 
+        <SwitchPreference
+            android:key="show_notification_channel_warnings"
+            android:title="@string/show_notification_channel_warnings"
+            android:summary="@string/show_notification_channel_warnings_summary"/>
+
         <Preference
                 android:key="inactive_apps"
-                android:title="@string/inactive_apps_title" />
+                android:title="@string/inactive_apps_title"
+                android:fragment="com.android.settings.fuelgauge.InactiveApps"/>
 
         <SwitchPreference
             android:key="force_allow_on_external"
@@ -463,46 +497,14 @@
             android:key="reset_shortcut_manager_throttling"
             android:title="@string/reset_shortcut_manager_throttling" />
 
-        <cyanogenmod.preference.CMSecureSettingSwitchPreference
+        <lineageos.preference.LineageSecureSettingSwitchPreference
             android:key="kill_app_longpress_back"
             android:title="@string/kill_app_longpress_back"
             android:summary="@string/kill_app_longpress_back_summary"/>
-
-        <ListPreference
-            android:key="kill_app_longpress_timeout"
-            android:title="@string/kill_app_longpress_timeout_title"
-            android:entries="@array/kill_app_longpress_timeout_entries"
-            android:entryValues="@array/kill_app_longpress_timeout_values"
-            android:dependency="kill_app_longpress_back" />
-
      </PreferenceCategory>
 
-     <PreferenceCategory
-         android:title="@string/selinux_switch_cat_title">
-
-     <!-- SELinux -->
-     <Preference
-         android:key="selinux_switch"
-         android:title="@string/selinux_switch_title"
-         android:summary="@string/selinux_switch_summary"
-         android:selectable="false"/>
-
-     <SwitchPreference
-         android:key="selinux"
-         android:title="@string/selinux_title"
-         android:defaultValue="false" />
-
-     </PreferenceCategory>
-
-     <SwitchPreference
-         android:key="hal3_enabled"
-         android:title="@string/hal3_enabled_title"
-         android:summary="@string/hal3_enabled_summary"
-         android:defaultValue="false" />
-
-     <SwitchPreference
-         android:key="google_camera_hack_enabled"
-         android:title="@string/googlecamera_hack_enabled_title"
-         android:defaultValue="false" />
+    <PreferenceCategory
+      android:key="dashboard_tile_placeholder"
+      android:order="200"/>
 
 </PreferenceScreen>

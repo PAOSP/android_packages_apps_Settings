@@ -358,11 +358,10 @@ public class AppOpsCategory extends ListFragment implements
         args.putString(AppOpsDetails.ARG_PACKAGE_NAME, mCurrentPkgName);
 
         SettingsActivity sa = (SettingsActivity) getActivity();
-        sa.startPreferencePanel(AppOpsDetails.class.getName(), args,
-                org.cyanogenmod.platform.internal.R.string.privacy_guard_manager_title,
-                null, this, RESULT_APP_DETAILS);
+        sa.startPreferencePanel(this, AppOpsDetails.class.getName(), args,
+                R.string.app_ops_settings, null, this, RESULT_APP_DETAILS);
     }
-    
+
     @Override public void onListItemClick(ListView l, View v, int position, long id) {
         AppOpEntry entry = mAdapter.getItem(position);
         if (entry != null) {

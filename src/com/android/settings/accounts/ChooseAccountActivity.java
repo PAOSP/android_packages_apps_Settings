@@ -37,13 +37,17 @@ import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceGroup;
 import android.util.Log;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.util.CharSequences;
 import com.android.settings.R;
 import com.android.settings.SettingsPreferenceFragment;
 import com.android.settings.Utils;
+import com.android.settings.enterprise.EnterprisePrivacyFeatureProvider;
+import com.android.settings.overlay.FeatureFactory;
 import com.android.settingslib.RestrictedLockUtils;
 import com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
+import com.android.settingslib.widget.FooterPreference;
+import com.android.settingslib.widget.FooterPreferenceMixin;
 
 import com.google.android.collect.Maps;
 
@@ -62,6 +66,10 @@ import java.util.Map;
 public class ChooseAccountActivity extends SettingsPreferenceFragment {
 
     private static final String TAG = "ChooseAccountActivity";
+
+    private EnterprisePrivacyFeatureProvider mFeatureProvider;
+    private FooterPreference mEnterpriseDisclosurePreference = null;
+
     private String[] mAuthorities;
     private PreferenceGroup mAddAccountGroup;
     private final ArrayList<ProviderEntry> mProviderList = new ArrayList<ProviderEntry>();
@@ -94,13 +102,17 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.ACCOUNTS_CHOOSE_ACCOUNT_ACTIVITY;
     }
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+
+        final Activity activity = getActivity();
+        mFeatureProvider = FeatureFactory.getFactory(activity)
+                .getEnterprisePrivacyFeatureProvider(activity);
 
         addPreferencesFromResource(R.xml.add_account_settings);
         mAuthorities = getIntent().getStringArrayExtra(
@@ -137,11 +149,6 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
         // Create list of providers to show on preference screen
         for (int i = 0; i < mAuthDescs.length; i++) {
             String accountType = mAuthDescs[i].type;
-            if (!Utils.showAccount(getPreferenceScreen().getContext(), accountType)) {
-                // If needn't to show the account, skip this account.
-                continue;
-            }
-
             CharSequence providerName = getLabelForType(accountType);
 
             // Skip preferences for authorities not specified. If no authorities specified,
@@ -171,7 +178,7 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
         }
 
         final Context context = getPreferenceScreen().getContext();
-        if (mProviderList.size() == 1 && getResources().getBoolean(R.bool.config_show_email)) {
+        if (mProviderList.size() == 1) {
             // There's only one provider that matches. If it is disabled by admin show the
             // support dialog otherwise run it.
             EnforcedAdmin admin = RestrictedLockUtils.checkIfAccountManagementDisabled(
@@ -179,7 +186,7 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
             if (admin != null) {
                 setResult(RESULT_CANCELED, RestrictedLockUtils.getShowAdminSupportDetailsIntent(
                         context, admin));
-                finishAccountActivity();
+                finish();
             } else {
                 finishWithAccountType(mProviderList.get(0).type);
             }
@@ -193,6 +200,7 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
                 p.checkAccountManagementAndSetDisabled(mUserHandle.getIdentifier());
                 mAddAccountGroup.addPreference(p);
             }
+            addEnterpriseDisclosure();
         } else {
             if (Log.isLoggable(TAG, Log.VERBOSE)) {
                 final StringBuilder auths = new StringBuilder();
@@ -203,8 +211,21 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
                 Log.v(TAG, "No providers found for authorities: " + auths);
             }
             setResult(RESULT_CANCELED);
-            finishAccountActivity();
+            finish();
         }
+    }
+
+    private void addEnterpriseDisclosure() {
+        final CharSequence disclosure = mFeatureProvider.getDeviceOwnerDisclosure();
+        if (disclosure == null) {
+            return;
+        }
+        if (mEnterpriseDisclosurePreference == null) {
+            mEnterpriseDisclosurePreference = mFooterPreferenceMixin.createFooterPreference();
+            mEnterpriseDisclosurePreference.setSelectable(false);
+        }
+        mEnterpriseDisclosurePreference.setTitle(disclosure);
+        mAddAccountGroup.addPreference(mEnterpriseDisclosurePreference);
     }
 
     public ArrayList<String> getAuthoritiesForAccountType(String type) {
@@ -297,14 +318,5 @@ public class ChooseAccountActivity extends SettingsPreferenceFragment {
         intent.putExtra(EXTRA_USER, mUserHandle);
         setResult(RESULT_OK, intent);
         finish();
-    }
-
-    // SettingsPreferenceFragment finish() will cause "Recursive entry" IllegalStateException.
-    // Use Activity finish() directly in onCreate() call stack.
-    private void finishAccountActivity() {
-        Activity activity = getActivity();
-        if (activity != null) {
-            activity.finish();
-        }
     }
 }

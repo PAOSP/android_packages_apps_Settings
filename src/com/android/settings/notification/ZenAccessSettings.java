@@ -17,7 +17,9 @@
 package com.android.settings.notification;
 
 import android.annotation.Nullable;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.AppGlobals;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.NotificationManager;
@@ -25,14 +27,17 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageItemInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ParceledListSlice;
 import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.RemoteException;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.support.v14.preference.SwitchPreference;
@@ -41,27 +46,30 @@ import android.support.v7.preference.Preference.OnPreferenceChangeListener;
 import android.support.v7.preference.PreferenceScreen;
 import android.text.TextUtils;
 import android.util.ArraySet;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
+import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
+import com.android.settings.overlay.FeatureFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class ZenAccessSettings extends EmptyTextSettings {
+    private final String TAG = "ZenAccessSettings";
 
     private final SettingObserver mObserver = new SettingObserver();
-    private static final String ENABLED_SERVICES_SEPARATOR = ":";
-
     private Context mContext;
     private PackageManager mPkgMan;
     private NotificationManager mNoMan;
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.NOTIFICATION_ZEN_MODE_ACCESS;
     }
 
@@ -84,26 +92,32 @@ public class ZenAccessSettings extends EmptyTextSettings {
     @Override
     public void onResume() {
         super.onResume();
-        reloadList();
-        getContentResolver().registerContentObserver(
-                Secure.getUriFor(Secure.ENABLED_NOTIFICATION_POLICY_ACCESS_PACKAGES), false,
-                mObserver);
-        getContentResolver().registerContentObserver(
-                Secure.getUriFor(Secure.ENABLED_NOTIFICATION_LISTENERS), false,
-                mObserver);
+        if (!ActivityManager.isLowRamDeviceStatic()) {
+            reloadList();
+            getContentResolver().registerContentObserver(
+                    Secure.getUriFor(Secure.ENABLED_NOTIFICATION_POLICY_ACCESS_PACKAGES), false,
+                    mObserver);
+            getContentResolver().registerContentObserver(
+                    Secure.getUriFor(Secure.ENABLED_NOTIFICATION_LISTENERS), false,
+                    mObserver);
+        } else {
+            setEmptyText(R.string.disabled_low_ram_device);
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        getContentResolver().unregisterContentObserver(mObserver);
+        if (!ActivityManager.isLowRamDeviceStatic()) {
+            getContentResolver().unregisterContentObserver(mObserver);
+        }
     }
 
     private void reloadList() {
         final PreferenceScreen screen = getPreferenceScreen();
         screen.removeAll();
         final ArrayList<ApplicationInfo> apps = new ArrayList<>();
-        final ArraySet<String> requesting = mNoMan.getPackagesRequestingNotificationPolicyAccess();
+        final ArraySet<String> requesting = getPackagesRequestingNotificationPolicyAccess();
         if (!requesting.isEmpty()) {
             final List<ApplicationInfo> installed = mPkgMan.getInstalledApplications(0);
             if (installed != null) {
@@ -114,7 +128,8 @@ public class ZenAccessSettings extends EmptyTextSettings {
                 }
             }
         }
-        ArraySet<String> autoApproved = getEnabledNotificationListeners();
+        ArraySet<String> autoApproved = new ArraySet<>();
+        autoApproved.addAll(mNoMan.getEnabledNotificationListenerPackages());
         requesting.addAll(autoApproved);
         Collections.sort(apps, new PackageItemInfo.DisplayNameComparator(mPkgMan));
         for (ApplicationInfo app : apps) {
@@ -149,20 +164,25 @@ public class ZenAccessSettings extends EmptyTextSettings {
         }
     }
 
-    private ArraySet<String> getEnabledNotificationListeners() {
-        ArraySet<String> packages = new ArraySet<>();
-        String settingValue = Settings.Secure.getString(getContext().getContentResolver(),
-                Settings.Secure.ENABLED_NOTIFICATION_LISTENERS);
-        if (!TextUtils.isEmpty(settingValue)) {
-            String[] restored = settingValue.split(ENABLED_SERVICES_SEPARATOR);
-            for (int i = 0; i < restored.length; i++) {
-                ComponentName value = ComponentName.unflattenFromString(restored[i]);
-                if (null != value) {
-                    packages.add(value.getPackageName());
+    private ArraySet<String> getPackagesRequestingNotificationPolicyAccess() {
+        ArraySet<String> requestingPackages = new ArraySet<>();
+        try {
+            final String[] PERM = {
+                    android.Manifest.permission.ACCESS_NOTIFICATION_POLICY
+            };
+            final ParceledListSlice list = AppGlobals.getPackageManager()
+                    .getPackagesHoldingPermissions(PERM, 0 /*flags*/,
+                            ActivityManager.getCurrentUser());
+            final List<PackageInfo> pkgs = list.getList();
+            if (pkgs != null) {
+                for (PackageInfo info : pkgs) {
+                    requestingPackages.add(info.packageName);
                 }
             }
+        } catch(RemoteException e) {
+            Log.e(TAG, "Cannot reach packagemanager", e);
         }
-        return packages;
+        return requestingPackages;
     }
 
     private boolean hasAccess(String pkg) {
@@ -170,6 +190,7 @@ public class ZenAccessSettings extends EmptyTextSettings {
     }
 
     private static void setAccess(final Context context, final String pkg, final boolean access) {
+        logSpecialPermissionChange(access, pkg, context);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -178,6 +199,15 @@ public class ZenAccessSettings extends EmptyTextSettings {
             }
         });
     }
+
+    @VisibleForTesting
+    static void logSpecialPermissionChange(boolean enable, String packageName, Context context) {
+        int logCategory = enable ? MetricsEvent.APP_SPECIAL_PERMISSION_DND_ALLOW
+                : MetricsEvent.APP_SPECIAL_PERMISSION_DND_DENY;
+        FeatureFactory.getFactory(context).getMetricsFeatureProvider().action(context,
+                logCategory, packageName);
+    }
+
 
     private static void deleteRules(final Context context, final String pkg) {
         AsyncTask.execute(new Runnable() {
@@ -203,9 +233,14 @@ public class ZenAccessSettings extends EmptyTextSettings {
     /**
      * Warning dialog when allowing zen access warning about the privileges being granted.
      */
-    public static class ScaryWarningDialogFragment extends DialogFragment {
+    public static class ScaryWarningDialogFragment extends InstrumentedDialogFragment {
         static final String KEY_PKG = "p";
         static final String KEY_LABEL = "l";
+
+        @Override
+        public int getMetricsCategory() {
+            return MetricsEvent.DIALOG_ZEN_ACCESS_GRANT;
+        }
 
         public ScaryWarningDialogFragment setPkgInfo(String pkg, CharSequence label) {
             Bundle args = new Bundle();
@@ -249,9 +284,15 @@ public class ZenAccessSettings extends EmptyTextSettings {
     /**
      * Warning dialog when revoking zen access warning that zen rule instances will be deleted.
      */
-    public static class FriendlyWarningDialogFragment extends DialogFragment {
+    public static class FriendlyWarningDialogFragment extends InstrumentedDialogFragment {
         static final String KEY_PKG = "p";
         static final String KEY_LABEL = "l";
+
+
+        @Override
+        public int getMetricsCategory() {
+            return MetricsEvent.DIALOG_ZEN_ACCESS_REVOKE;
+        }
 
         public FriendlyWarningDialogFragment setPkgInfo(String pkg, CharSequence label) {
             Bundle args = new Bundle();

@@ -18,6 +18,8 @@ package com.android.settings.fuelgauge;
 import android.os.IDeviceIdleController;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.support.annotation.VisibleForTesting;
+
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -31,7 +33,7 @@ public class PowerWhitelistBackend {
 
     private static final String DEVICE_IDLE_SERVICE = "deviceidle";
 
-    private static final PowerWhitelistBackend INSTANCE = new PowerWhitelistBackend();
+    private static PowerWhitelistBackend sInstance;
 
     private final IDeviceIdleController mDeviceIdleService;
     private final ArraySet<String> mWhitelistedApps = new ArraySet<>();
@@ -57,11 +59,7 @@ public class PowerWhitelistBackend {
 
     public void addApp(String pkg) {
         try {
-            if (isSysWhitelisted(pkg)) {
-                mDeviceIdleService.addSystemPowerSaveWhitelistApp(pkg);
-            } else {
-                mDeviceIdleService.addPowerSaveWhitelistApp(pkg);
-            }
+            mDeviceIdleService.addPowerSaveWhitelistApp(pkg);
             mWhitelistedApps.add(pkg);
         } catch (RemoteException e) {
             Log.w(TAG, "Unable to reach IDeviceIdleController", e);
@@ -70,18 +68,15 @@ public class PowerWhitelistBackend {
 
     public void removeApp(String pkg) {
         try {
-            if (isSysWhitelisted(pkg)) {
-                mDeviceIdleService.removeSystemPowerSaveWhitelistApp(pkg);
-            } else {
-                mDeviceIdleService.removePowerSaveWhitelistApp(pkg);
-            }
+            mDeviceIdleService.removePowerSaveWhitelistApp(pkg);
             mWhitelistedApps.remove(pkg);
         } catch (RemoteException e) {
             Log.w(TAG, "Unable to reach IDeviceIdleController", e);
         }
     }
 
-    private void refreshList() {
+    @VisibleForTesting
+    void refreshList() {
         mSysWhitelistedApps.clear();
         mWhitelistedApps.clear();
         try {
@@ -89,7 +84,7 @@ public class PowerWhitelistBackend {
             for (String app : whitelistedApps) {
                 mWhitelistedApps.add(app);
             }
-            String[] sysWhitelistedApps = mDeviceIdleService.getSystemPowerWhitelistOriginal();
+            String[] sysWhitelistedApps = mDeviceIdleService.getSystemPowerWhitelist();
             for (String app : sysWhitelistedApps) {
                 mSysWhitelistedApps.add(app);
             }
@@ -99,7 +94,10 @@ public class PowerWhitelistBackend {
     }
 
     public static PowerWhitelistBackend getInstance() {
-        return INSTANCE;
+        if (sInstance == null) {
+            sInstance = new PowerWhitelistBackend();
+        }
+        return sInstance;
     }
 
 }

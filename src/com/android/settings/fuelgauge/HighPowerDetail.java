@@ -30,11 +30,15 @@ import android.view.View;
 import android.widget.Checkable;
 import android.widget.TextView;
 
+import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.logging.nano.MetricsProto;
 import com.android.settings.R;
 import com.android.settings.applications.AppInfoBase;
+import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
+import com.android.settings.overlay.FeatureFactory;
 import com.android.settingslib.applications.ApplicationsState.AppEntry;
 
-public class HighPowerDetail extends DialogFragment implements OnClickListener,
+public class HighPowerDetail extends InstrumentedDialogFragment implements OnClickListener,
         View.OnClickListener {
 
     private static final String ARG_DEFAULT_ON = "default_on";
@@ -47,6 +51,11 @@ public class HighPowerDetail extends DialogFragment implements OnClickListener,
     private boolean mIsEnabled;
     private Checkable mOptionOn;
     private Checkable mOptionOff;
+
+    @Override
+    public int getMetricsCategory() {
+        return MetricsProto.MetricsEvent.DIALOG_HIGH_POWER_DETAILS;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -70,6 +79,9 @@ public class HighPowerDetail extends DialogFragment implements OnClickListener,
                 ? R.string.ignore_optimizations_on_desc : R.string.ignore_optimizations_off_desc);
         view.setClickable(true);
         view.setOnClickListener(this);
+        if (!on && mBackend.isSysWhitelisted(mPackageName)) {
+            view.setEnabled(false);
+        }
         return (Checkable) view;
     }
 
@@ -79,7 +91,9 @@ public class HighPowerDetail extends DialogFragment implements OnClickListener,
                 .setTitle(mLabel)
                 .setNegativeButton(R.string.cancel, null)
                 .setView(R.layout.ignore_optimizations_content);
-        b.setPositiveButton(R.string.done, this);
+        if (!mBackend.isSysWhitelisted(mPackageName)) {
+            b.setPositiveButton(R.string.done, this);
+        }
         return b.create();
     }
 
@@ -113,6 +127,7 @@ public class HighPowerDetail extends DialogFragment implements OnClickListener,
             boolean newValue = mIsEnabled;
             boolean oldValue = mBackend.isWhitelisted(mPackageName);
             if (newValue != oldValue) {
+                logSpecialPermissionChange(newValue, mPackageName, getContext());
                 if (newValue) {
                     mBackend.addApp(mPackageName);
                 } else {
@@ -122,11 +137,19 @@ public class HighPowerDetail extends DialogFragment implements OnClickListener,
         }
     }
 
+    @VisibleForTesting
+    static void logSpecialPermissionChange(boolean whitelist, String packageName, Context context) {
+        int logCategory = whitelist ? MetricsProto.MetricsEvent.APP_SPECIAL_PERMISSION_BATTERY_DENY
+                : MetricsProto.MetricsEvent.APP_SPECIAL_PERMISSION_BATTERY_ALLOW;
+        FeatureFactory.getFactory(context).getMetricsFeatureProvider().action(context, logCategory,
+                packageName);
+    }
+
     @Override
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
         Fragment target = getTargetFragment();
-        if (target != null) {
+        if (target != null && target.getActivity() != null) {
             target.onActivityResult(getTargetRequestCode(), 0, null);
         }
     }
@@ -137,7 +160,8 @@ public class HighPowerDetail extends DialogFragment implements OnClickListener,
 
     public static CharSequence getSummary(Context context, String pkg) {
         PowerWhitelistBackend powerWhitelist = PowerWhitelistBackend.getInstance();
-        return context.getString(powerWhitelist.isWhitelisted(pkg) ? R.string.high_power_on
+        return context.getString(powerWhitelist.isSysWhitelisted(pkg) ? R.string.high_power_system
+                : powerWhitelist.isWhitelisted(pkg) ? R.string.high_power_on
                 : R.string.high_power_off);
     }
 

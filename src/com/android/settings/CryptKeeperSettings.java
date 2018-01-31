@@ -35,9 +35,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
+import com.android.settings.core.InstrumentedPreferenceFragment;
+import com.android.settings.password.ChooseLockSettingsHelper;
+import com.android.settings.password.ConfirmLockPattern;
 
-public class CryptKeeperSettings extends InstrumentedFragment {
+public class CryptKeeperSettings extends InstrumentedPreferenceFragment {
     private static final String TAG = "CryptKeeper";
     private static final String TYPE = "type";
     private static final String PASSWORD = "password";
@@ -115,7 +118,7 @@ public class CryptKeeperSettings extends InstrumentedFragment {
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.CRYPT_KEEPER;
     }
 
@@ -138,7 +141,6 @@ public class CryptKeeperSettings extends InstrumentedFragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        setHasOptionsMenu(true);
         Activity activity = getActivity();
         Intent intent = activity.getIntent();
         if (DevicePolicyManager.ACTION_START_ENCRYPTION.equals(intent.getAction())) {

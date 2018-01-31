@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2015 The Android Open Source Project
- * Copyright (C) 2016 The CyanogenMod Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +17,13 @@ package com.android.settings.applications;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.Preference.OnPreferenceClickListener;
 import android.text.format.Formatter;
 import android.text.format.Formatter.BytesResult;
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
-import com.android.settings.Settings.AppOpsSummaryActivity;
 import com.android.settings.SummaryPreference;
 import com.android.settings.Utils;
 import com.android.settings.applications.ProcStatsData.MemInfo;
@@ -41,9 +38,6 @@ public class ProcessStatsSummary extends ProcessStatsBase implements OnPreferenc
     private static final String KEY_AVERAGY_USED = "average_used";
     private static final String KEY_FREE = "free";
     private static final String KEY_APP_LIST = "apps_list";
-    private static final String KEY_APP_STARTUP = "apps_startup";
-
-    private Activity mActivity;
 
     private SummaryPreference mSummaryPref;
 
@@ -52,13 +46,10 @@ public class ProcessStatsSummary extends ProcessStatsBase implements OnPreferenc
     private Preference mAverageUsed;
     private Preference mFree;
     private Preference mAppListPreference;
-    private Preference mAppStartupPreference;
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
-        mActivity = getActivity();
 
         addPreferencesFromResource(R.xml.process_stats_summary);
         mSummaryPref = (SummaryPreference) findPreference(KEY_STATUS_HEADER);
@@ -68,8 +59,6 @@ public class ProcessStatsSummary extends ProcessStatsBase implements OnPreferenc
         mFree = findPreference(KEY_FREE);
         mAppListPreference = findPreference(KEY_APP_LIST);
         mAppListPreference.setOnPreferenceClickListener(this);
-        mAppStartupPreference = findPreference(KEY_APP_STARTUP);
-        mAppStartupPreference.setOnPreferenceClickListener(this);
     }
 
     @Override
@@ -109,8 +98,13 @@ public class ProcessStatsSummary extends ProcessStatsBase implements OnPreferenc
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.PROCESS_STATS_SUMMARY;
+    }
+
+    @Override
+    protected int getHelpResource() {
+        return R.string.help_uri_process_stats_summary;
     }
 
     @Override
@@ -120,14 +114,8 @@ public class ProcessStatsSummary extends ProcessStatsBase implements OnPreferenc
             args.putBoolean(ARG_TRANSFER_STATS, true);
             args.putInt(ARG_DURATION_INDEX, mDurationIndex);
             mStatsManager.xferStats();
-            startFragment(this, ProcessStatsUi.class.getName(), R.string.app_list_memory_use, 0,
+            startFragment(this, ProcessStatsUi.class.getName(), R.string.memory_usage_apps, 0,
                     args);
-            return true;
-        } else if (preference == mAppStartupPreference) {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.putExtra("appops_tab", getString(R.string.app_ops_categories_bootup));
-            intent.setClass(mActivity, AppOpsSummaryActivity.class);
-            mActivity.startActivity(intent);
             return true;
         }
         return false;

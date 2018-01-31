@@ -28,7 +28,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 
 import android.text.style.TtsSpan;
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.PhoneFactory;
@@ -84,7 +84,6 @@ public class ImeiInformation extends SettingsPreferenceFragment {
                 if (phone.getLteOnCdmaMode() == PhoneConstants.LTE_ON_CDMA_TRUE) {
                     // Show ICC ID and IMEI for LTE device
                     setSummaryText(KEY_ICC_ID, phone.getIccSerialNumber());
-                    setSummaryText(KEY_IMEI, phone.getImei());
                     setSummaryTextAsDigit(KEY_IMEI, phone.getImei());
                     setSummaryTextAsDigit(KEY_IMEI_SV, phone.getDeviceSvn());
                 } else {
@@ -95,15 +94,6 @@ public class ImeiInformation extends SettingsPreferenceFragment {
                     removePreferenceFromScreen(KEY_ICC_ID);
                 }
             } else {
-                boolean displayIccId = getResources().getBoolean(
-                        R.bool.config_regional_display_icc_id_enable);
-                if (displayIccId) {
-                    setSummaryText(KEY_ICC_ID, phone.getIccSerialNumber());
-                } else {
-                    removePreferenceFromScreen(KEY_ICC_ID);
-                }
-                setSummaryText(KEY_IMEI, phone.getImei());
-                setSummaryText(KEY_IMEI_SV, phone.getDeviceSvn());
                 setSummaryTextAsDigit(KEY_IMEI, phone.getImei());
                 setSummaryTextAsDigit(KEY_IMEI_SV, phone.getDeviceSvn());
                 // device is not CDMA, do not display CDMA features
@@ -111,6 +101,7 @@ public class ImeiInformation extends SettingsPreferenceFragment {
                 removePreferenceFromScreen(KEY_PRL_VERSION);
                 removePreferenceFromScreen(KEY_MEID_NUMBER);
                 removePreferenceFromScreen(KEY_MIN_NUMBER);
+                removePreferenceFromScreen(KEY_ICC_ID);
             }
         }
     }
@@ -179,7 +170,7 @@ public class ImeiInformation extends SettingsPreferenceFragment {
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.DEVICEINFO_IMEI_INFORMATION;
     }
 }

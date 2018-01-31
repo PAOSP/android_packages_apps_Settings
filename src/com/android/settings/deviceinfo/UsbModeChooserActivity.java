@@ -20,8 +20,6 @@ import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
-import android.app.IThemeCallback;
-import android.app.ThemeManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -31,12 +29,9 @@ import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.provider.Settings.Secure;
-import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.support.annotation.VisibleForTesting;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -60,17 +55,13 @@ public class UsbModeChooserActivity extends Activity {
         UsbBackend.MODE_POWER_SOURCE | UsbBackend.MODE_DATA_NONE,
         UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_MTP,
         UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_PTP,
-        UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_MIDI,
-        UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_TETHERING
+        UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_MIDI
     };
 
     private UsbBackend mBackend;
     private AlertDialog mDialog;
     private LayoutInflater mLayoutInflater;
     private EnforcedAdmin mEnforcedAdmin;
-
-    private int mTheme;
-    private ThemeManager mThemeManager;
 
     private BroadcastReceiver mDisconnectedReceiver = new BroadcastReceiver() {
         @Override
@@ -89,30 +80,10 @@ public class UsbModeChooserActivity extends Activity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        final int themeMode = Secure.getInt(getContentResolver(),
-                Secure.THEME_PRIMARY_COLOR, 0);
-        final int accentColor = Secure.getInt(getContentResolver(),
-                Secure.THEME_ACCENT_COLOR, 0);
-        mThemeManager = (ThemeManager) getSystemService(Context.THEME_SERVICE);
-        if (mThemeManager != null) {
-            mThemeManager.addCallback(mThemeCallback);
-        }
-        if (themeMode != 0 || accentColor != 0) {
-            getTheme().applyStyle(mTheme, true);
-        }
-        if (themeMode == 2) {
-            getTheme().applyStyle(R.style.settings_pixel_theme, true);
-        }
 
         super.onCreate(savedInstanceState);
 
         mLayoutInflater = LayoutInflater.from(this);
-
-        //Since the Settings App may be killed during the boot process,
-        //the memory of UsbModeChooserReceiver will be released.
-        //While reboot MUT with connecting USB cable, we need make sure
-        //the value of mSoftSwitch is true before the USB Mode Dialog show.
-        UsbModeChooserReceiver.mSoftSwitch = true;
 
         mDialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.usb_use)
@@ -137,14 +108,10 @@ public class UsbModeChooserActivity extends Activity {
                 UserManager.DISALLOW_USB_FILE_TRANSFER, UserHandle.myUserId());
         mBackend = new UsbBackend(this);
         int current = mBackend.getCurrentMode();
-        int dataTetherMode = UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_TETHERING;
         for (int i = 0; i < DEFAULT_MODES.length; i++) {
             if (mBackend.isModeSupported(DEFAULT_MODES[i])
                     && !mBackend.isModeDisallowedBySystem(DEFAULT_MODES[i])) {
-                if (getResources().getBoolean(
-                        R.bool.config_regional_usb_tethering_quick_start_enable)
-                        || (dataTetherMode != DEFAULT_MODES[i]))
-                    inflateOption(DEFAULT_MODES[i], current == DEFAULT_MODES[i], container,
+                inflateOption(DEFAULT_MODES[i], current == DEFAULT_MODES[i], container,
                         mBackend.isModeDisallowed(DEFAULT_MODES[i]));
             }
         }
@@ -166,19 +133,12 @@ public class UsbModeChooserActivity extends Activity {
 
     private void inflateOption(final int mode, boolean selected, LinearLayout container,
             final boolean disallowedByAdmin) {
-        /** UsbSecurity is disable
-        boolean isSimCardInserted = SystemProperties.getBoolean(
-            "persist.sys.sim.activate", false);
-        boolean isUsbSecurityEnable = SystemProperties.getBoolean(
-            "persist.sys.usb.security", false);
-        **/
-
         View v = mLayoutInflater.inflate(R.layout.restricted_radio_with_summary, container, false);
 
         TextView titleView = (TextView) v.findViewById(android.R.id.title);
         titleView.setText(getTitle(mode));
         TextView summaryView = (TextView) v.findViewById(android.R.id.summary);
-        summaryView.setText(getSummary(mode));
+        updateSummary(summaryView, mode);
 
         if (disallowedByAdmin) {
             if (mEnforcedAdmin != null) {
@@ -204,11 +164,6 @@ public class UsbModeChooserActivity extends Activity {
             }
         });
         ((Checkable) v).setChecked(selected);
-        /** UsbSecurity is disable
-        if( !isSimCardInserted && isUsbSecurityEnable )
-        {
-            v.setEnabled(selected);
-        }**/
         container.addView(v);
     }
 
@@ -223,25 +178,15 @@ public class UsbModeChooserActivity extends Activity {
         }
     }
 
-    private static int getSummary(int mode) {
-        switch (mode) {
-            case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_NONE:
-                return R.string.usb_use_charging_only_desc;
-            case UsbBackend.MODE_POWER_SOURCE | UsbBackend.MODE_DATA_NONE:
-                return R.string.usb_use_power_only_desc;
-            case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_MTP:
-                return R.string.usb_use_file_transfers_desc;
-            case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_PTP:
-                return R.string.usb_use_photo_transfers_desc;
-            case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_MIDI:
-                return R.string.usb_use_MIDI_desc;
-            case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_TETHERING:
-                return R.string.usb_tethering_desc;
+    @VisibleForTesting
+    static void updateSummary(TextView summaryView, int mode) {
+        if (mode == (UsbBackend.MODE_POWER_SOURCE | UsbBackend.MODE_DATA_NONE)) {
+            summaryView.setText(R.string.usb_use_power_only_desc);
         }
-        return 0;
     }
 
-    private static int getTitle(int mode) {
+    @VisibleForTesting
+    static int getTitle(int mode) {
         switch (mode) {
             case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_NONE:
                 return R.string.usb_use_charging_only;
@@ -253,25 +198,7 @@ public class UsbModeChooserActivity extends Activity {
                 return R.string.usb_use_photo_transfers;
             case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_MIDI:
                 return R.string.usb_use_MIDI;
-            case UsbBackend.MODE_POWER_SINK | UsbBackend.MODE_DATA_TETHERING:
-                return R.string.usb_tethering_title;
         }
         return 0;
     }
-
-    private final IThemeCallback mThemeCallback = new IThemeCallback.Stub() {
-
-        @Override
-        public void onThemeChanged(int themeMode, int color) {
-            onCallbackAdded(themeMode, color);
-            UsbModeChooserActivity.this.runOnUiThread(() -> {
-                UsbModeChooserActivity.this.recreate();
-            });
-        }
-
-        @Override
-        public void onCallbackAdded(int themeMode, int color) {
-            mTheme = color;
-        }
-    };
 }

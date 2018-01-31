@@ -20,8 +20,6 @@ import android.app.AppOpsManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.provider.Settings;
@@ -31,10 +29,14 @@ import android.support.v7.preference.Preference.OnPreferenceChangeListener;
 import android.support.v7.preference.Preference.OnPreferenceClickListener;
 import android.util.Log;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import android.view.Window;
+import android.view.WindowManager;
+import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
 import com.android.settings.applications.AppStateAppOpsBridge.PermissionState;
 import com.android.settings.applications.AppStateOverlayBridge.OverlayState;
+import com.android.settings.overlay.FeatureFactory;
 import com.android.settingslib.applications.ApplicationsState.AppEntry;
 
 public class DrawOverlayDetails extends AppInfoWithHeader implements OnPreferenceChangeListener,
@@ -88,6 +90,26 @@ public class DrawOverlayDetails extends AppInfoWithHeader implements OnPreferenc
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        getActivity().getWindow().addFlags(
+                WindowManager.LayoutParams.PRIVATE_FLAG_HIDE_NON_SYSTEM_OVERLAY_WINDOWS);
+    }
+
+    @Override
+    public void onPause() {
+        getActivity().getWindow().clearFlags(
+                WindowManager.LayoutParams.PRIVATE_FLAG_HIDE_NON_SYSTEM_OVERLAY_WINDOWS);
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mOverlayBridge.release();
+    }
+
+    @Override
     public boolean onPreferenceClick(Preference preference) {
         if (preference == mOverlayPrefs) {
             if (mSettingsIntent != null) {
@@ -115,19 +137,18 @@ public class DrawOverlayDetails extends AppInfoWithHeader implements OnPreferenc
     }
 
     private void setCanDrawOverlay(boolean newState) {
+        logSpecialPermissionChange(newState, mPackageName);
         mAppOpsManager.setMode(AppOpsManager.OP_SYSTEM_ALERT_WINDOW,
                 mPackageInfo.applicationInfo.uid, mPackageName, newState
                 ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_ERRORED);
     }
 
-    private boolean canDrawOverlay(String pkgName) {
-        int result = mAppOpsManager.noteOpNoThrow(AppOpsManager.OP_SYSTEM_ALERT_WINDOW,
-                mPackageInfo.applicationInfo.uid, pkgName);
-        if (result == AppOpsManager.MODE_ALLOWED) {
-            return true;
-        }
-
-        return false;
+    @VisibleForTesting
+    void logSpecialPermissionChange(boolean newState, String packageName) {
+        int logCategory = newState ? MetricsEvent.APP_SPECIAL_PERMISSION_APPDRAW_ALLOW
+                : MetricsEvent.APP_SPECIAL_PERMISSION_APPDRAW_DENY;
+        FeatureFactory.getFactory(getContext())
+                .getMetricsFeatureProvider().action(getContext(), logCategory, packageName);
     }
 
     @Override
@@ -138,7 +159,7 @@ public class DrawOverlayDetails extends AppInfoWithHeader implements OnPreferenc
         boolean isAllowed = mOverlayState.isPermissible();
         mSwitchPref.setChecked(isAllowed);
         // you cannot ask a user to grant you a permission you did not have!
-        mSwitchPref.setEnabled(mOverlayState.permissionDeclared);
+        mSwitchPref.setEnabled(mOverlayState.permissionDeclared && mOverlayState.controlEnabled);
         mOverlayPrefs.setEnabled(isAllowed);
         getPreferenceScreen().removePreference(mOverlayPrefs);
 
@@ -151,7 +172,7 @@ public class DrawOverlayDetails extends AppInfoWithHeader implements OnPreferenc
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.SYSTEM_ALERT_WINDOW_APPS;
     }
 
@@ -171,33 +192,6 @@ public class DrawOverlayDetails extends AppInfoWithHeader implements OnPreferenc
 
     public static CharSequence getSummary(Context context, OverlayState overlayState) {
         return context.getString(overlayState.isPermissible() ?
-            R.string.system_alert_window_on : R.string.system_alert_window_off);
-    }
-
-    public static CharSequence getSummary(Context context, String pkg) {
-        // first check if pkg is a system pkg
-        PackageManager packageManager = context.getPackageManager();
-        int uid = -1;
-        try {
-            ApplicationInfo appInfo = packageManager.getApplicationInfo(pkg, 0);
-            uid = appInfo.uid;
-            if ((appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
-                return context.getString(R.string.system_alert_window_on);
-            }
-        } catch (PackageManager.NameNotFoundException e) {
-            // pkg doesn't even exist?
-            Log.w(LOG_TAG, "Package " + pkg + " not found", e);
-            return context.getString(R.string.system_alert_window_off);
-        }
-
-        AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context
-                .APP_OPS_SERVICE);
-        if (uid == -1) {
-            return context.getString(R.string.system_alert_window_off);
-        }
-
-        int mode = appOpsManager.noteOpNoThrow(AppOpsManager.OP_SYSTEM_ALERT_WINDOW, uid, pkg);
-        return context.getString((mode == AppOpsManager.MODE_ALLOWED) ?
-                R.string.system_alert_window_on : R.string.system_alert_window_off);
+            R.string.app_permission_summary_allowed : R.string.app_permission_summary_not_allowed);
     }
 }

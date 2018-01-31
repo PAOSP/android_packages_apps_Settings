@@ -16,11 +16,10 @@
 
 package com.android.settings.location;
 
+import static com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
+
 import android.app.Activity;
-import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -28,18 +27,14 @@ import android.location.SettingInjectorService;
 import android.os.Bundle;
 import android.os.UserHandle;
 import android.os.UserManager;
-import android.provider.Settings;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceCategory;
 import android.support.v7.preference.PreferenceGroup;
 import android.support.v7.preference.PreferenceScreen;
-import android.support.v7.preference.CheckBoxPreference;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.widget.Switch;
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.DimmableIconPreference;
 import com.android.settings.R;
 import com.android.settings.SettingsActivity;
@@ -52,15 +47,9 @@ import com.android.settingslib.RestrictedSwitchPreference;
 import com.android.settingslib.location.RecentLocationApps;
 
 import java.util.ArrayList;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Properties;
-
-import static com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 
 /**
  * System location settings (Settings &gt; Location). The screen has three parts:
@@ -97,28 +86,15 @@ public class LocationSettings extends LocationSettingsBase
      * if there is a managed profile.
      */
     private static final String KEY_MANAGED_PROFILE_SWITCH = "managed_profile_location_switch";
-
-    // CMCC assisted gps SUPL(Secure User Plane Location) server address
-    private static final String ASSISTED_GPS_SUPL_HOST = "assisted_gps_supl_host";
-
-    // CMCC agps SUPL port address
-    private static final String ASSISTED_GPS_SUPL_PORT = "assisted_gps_supl_port";
-    private static final String KEY_ASSISTED_GPS = "assisted_gps";
-
     /** Key for preference screen "Mode" */
     private static final String KEY_LOCATION_MODE = "location_mode";
     /** Key for preference category "Recent location requests" */
     private static final String KEY_RECENT_LOCATION_REQUESTS = "recent_location_requests";
     /** Key for preference category "Location services" */
     private static final String KEY_LOCATION_SERVICES = "location_services";
-    private static final String PROPERTIES_FILE = "/etc/gps.conf";
 
-    private static final int MENU_SCANNING = Menu.FIRST;
-
-    private CheckBoxPreference mAssistedGps;
     private SwitchBar mSwitchBar;
     private Switch mSwitch;
-    private boolean mAgpsEnabled;
     private boolean mValidListener = false;
     private UserHandle mManagedProfile;
     private RestrictedSwitchPreference mManagedProfileSwitch;
@@ -130,7 +106,7 @@ public class LocationSettings extends LocationSettingsBase
     private UserManager mUm;
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.LOCATION;
     }
 
@@ -145,6 +121,8 @@ public class LocationSettings extends LocationSettingsBase
         mSwitchBar = activity.getSwitchBar();
         mSwitch = mSwitchBar.getSwitch();
         mSwitchBar.show();
+
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -209,6 +187,7 @@ public class LocationSettings extends LocationSettingsBase
                     @Override
                     public boolean onPreferenceClick(Preference preference) {
                         activity.startPreferencePanel(
+                                LocationSettings.this,
                                 LocationMode.class.getName(), null,
                                 R.string.location_mode_screen_title, null, LocationSettings.this,
                                 0);
@@ -216,33 +195,22 @@ public class LocationSettings extends LocationSettingsBase
                     }
                 });
 
-        mAgpsEnabled = getActivity().getResources().getBoolean(
-                        R.bool.config_agps_enabled);
-        mAssistedGps = (CheckBoxPreference) root.findPreference(KEY_ASSISTED_GPS);
-        if (!mAgpsEnabled) {
-            root.removePreference(mAssistedGps);
-        }
+        RecentLocationApps recentApps = new RecentLocationApps(activity);
+        List<RecentLocationApps.Request> recentLocationRequests = recentApps.getAppList();
 
-        if (mAssistedGps != null) {
-            mAssistedGps.setChecked(Settings.Global.getInt(
-                    getContentResolver(), Settings.Global.ASSISTED_GPS_ENABLED, 0) == 1);
-        }
+        final AppLocationPermissionPreferenceController preferenceController =
+                new AppLocationPermissionPreferenceController(activity);
+        preferenceController.displayPreference(root);
 
         mCategoryRecentLocationRequests =
                 (PreferenceCategory) root.findPreference(KEY_RECENT_LOCATION_REQUESTS);
-        RecentLocationApps recentApps = new RecentLocationApps(activity);
-        List<RecentLocationApps.Request> recentLocationRequests = recentApps.getAppList();
+
         List<Preference> recentLocationPrefs = new ArrayList<>(recentLocationRequests.size());
         for (final RecentLocationApps.Request request : recentLocationRequests) {
             DimmableIconPreference pref = new DimmableIconPreference(getPrefContext(),
                     request.contentDescription);
             pref.setIcon(request.icon);
             pref.setTitle(request.label);
-            if (request.isHighBattery) {
-                pref.setSummary(R.string.location_high_battery_use);
-            } else {
-                pref.setSummary(R.string.location_low_battery_use);
-            }
             pref.setOnPreferenceClickListener(
                     new PackageEntryClickedListener(request.packageName, request.userHandle));
             recentLocationPrefs.add(pref);
@@ -273,47 +241,6 @@ public class LocationSettings extends LocationSettingsBase
         return root;
     }
 
-    @Override
-    public boolean onPreferenceTreeClick(Preference preference) {
-        final ContentResolver cr = getContentResolver();
-        if (preference == mAssistedGps) {
-            if (mAssistedGps.isChecked()) {
-                if (Settings.Global.getString(cr, ASSISTED_GPS_SUPL_HOST) == null
-                        || Settings.Global
-                                .getString(cr, ASSISTED_GPS_SUPL_PORT) == null) {
-                    FileInputStream stream = null;
-                    try {
-                        Properties properties = new Properties();
-                        File file = new File(PROPERTIES_FILE);
-                        stream = new FileInputStream(file);
-                        properties.load(stream);
-                        Settings.Global.putString(cr, ASSISTED_GPS_SUPL_HOST,
-                                properties.getProperty("SUPL_HOST", null));
-                        Settings.Global.putString(cr, ASSISTED_GPS_SUPL_PORT,
-                                properties.getProperty("SUPL_PORT", null));
-                    } catch (IOException e) {
-                        Log.e("LocationSettings",
-                                "Could not open GPS configuration file "
-                                        + PROPERTIES_FILE + ", e=" + e);
-                    } finally {
-                        if (stream != null) {
-                            try {
-                                stream.close();
-                            } catch (Exception e) {
-                            }
-                       }
-                   }
-               }
-            }
-            Settings.Global.putInt(cr, Settings.Global.ASSISTED_GPS_ENABLED,
-                    mAssistedGps.isChecked() ? 1 : 0);
-        } else {
-            // If we didn't handle it, let preferences handle it.
-            return super.onPreferenceTreeClick(preference);
-        }
-
-        return true;
-    }
     private void setupManagedProfileCategory(PreferenceScreen root) {
         // Looking for a managed profile. If there are no managed profiles then we are removing the
         // managed profile category.
@@ -372,8 +299,9 @@ public class LocationSettings extends LocationSettingsBase
         injector = new SettingsInjector(context);
         // If location access is locked down by device policy then we only show injected settings
         // for the primary profile.
-        List<Preference> locationServices = injector.getInjectedSettings(lockdownOnLocationAccess ?
-                UserHandle.myUserId() : UserHandle.USER_CURRENT);
+        final Context prefContext = categoryLocationServices.getContext();
+        final List<Preference> locationServices = injector.getInjectedSettings(prefContext,
+                lockdownOnLocationAccess ? UserHandle.myUserId() : UserHandle.USER_CURRENT);
 
         mReceiver = new BroadcastReceiver() {
             @Override
@@ -398,49 +326,13 @@ public class LocationSettings extends LocationSettingsBase
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        menu.add(0, MENU_SCANNING, 0, R.string.location_menu_scanning);
-        // The super class adds "Help & Feedback" menu item.
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        final SettingsActivity activity = (SettingsActivity) getActivity();
-        switch (item.getItemId()) {
-            case MENU_SCANNING:
-                activity.startPreferencePanel(
-                        ScanningSettings.class.getName(), null,
-                        R.string.location_scanning_screen_title, null, LocationSettings.this,
-                        0);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-    @Override
     public int getHelpResource() {
         return R.string.help_url_location_access;
     }
 
-    private static int getLocationString(int mode) {
-        switch (mode) {
-            case android.provider.Settings.Secure.LOCATION_MODE_OFF:
-                return R.string.location_mode_location_off_title;
-            case android.provider.Settings.Secure.LOCATION_MODE_SENSORS_ONLY:
-                return R.string.location_mode_sensors_only_title;
-            case android.provider.Settings.Secure.LOCATION_MODE_BATTERY_SAVING:
-                return R.string.location_mode_battery_saving_title;
-            case android.provider.Settings.Secure.LOCATION_MODE_HIGH_ACCURACY:
-                return R.string.location_mode_high_accuracy_title;
-        }
-        return 0;
-    }
-
     @Override
     public void onModeChanged(int mode, boolean restricted) {
-        int modeDescription = getLocationString(mode);
+        int modeDescription = LocationPreferenceController.getLocationString(mode);
         if (modeDescription != 0) {
             mLocationMode.setSummary(modeDescription);
         }
@@ -529,6 +421,7 @@ public class LocationSettings extends LocationSettingsBase
             Bundle args = new Bundle();
             args.putString(InstalledAppDetails.ARG_PACKAGE_NAME, mPackage);
             ((SettingsActivity) getActivity()).startPreferencePanelAsUser(
+                    LocationSettings.this,
                     InstalledAppDetails.class.getName(), args,
                     R.string.application_info_label, null, mUserHandle);
             return true;
@@ -548,15 +441,8 @@ public class LocationSettings extends LocationSettingsBase
         @Override
         public void setListening(boolean listening) {
             if (listening) {
-                int mode = Settings.Secure.getInt(mContext.getContentResolver(),
-                        Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
-                if (mode != Settings.Secure.LOCATION_MODE_OFF) {
-                    mSummaryLoader.setSummary(this, mContext.getString(R.string.location_on_summary,
-                            mContext.getString(getLocationString(mode))));
-                } else {
-                    mSummaryLoader.setSummary(this,
-                            mContext.getString(R.string.location_off_summary));
-                }
+                mSummaryLoader.setSummary(
+                    this, LocationPreferenceController.getLocationSummary(mContext));
             }
         }
     }

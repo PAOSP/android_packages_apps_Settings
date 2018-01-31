@@ -38,7 +38,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.util.Preconditions;
 import com.android.settings.R;
 import com.android.settings.SettingsPreferenceFragment;
@@ -76,7 +76,7 @@ public class PublicVolumeSettings extends SettingsPreferenceFragment {
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.DEVICEINFO_STORAGE;
     }
 
@@ -98,7 +98,9 @@ public class PublicVolumeSettings extends SettingsPreferenceFragment {
             mVolume = mStorageManager.findVolumeByUuid(fsUuid);
         } else {
             final String volId = getArguments().getString(VolumeInfo.EXTRA_VOLUME_ID);
-            mVolume = mStorageManager.findVolumeById(volId);
+            if (volId != null) {
+                mVolume = mStorageManager.findVolumeById(volId);
+            }
         }
 
         if (!isVolumeValid()) {
@@ -130,6 +132,7 @@ public class PublicVolumeSettings extends SettingsPreferenceFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+        // If the volume isn't valid, we are not scaffolded to set up a view.
         if (!isVolumeValid()) {
             return;
         }
@@ -140,16 +143,6 @@ public class PublicVolumeSettings extends SettingsPreferenceFragment {
         final ViewGroup buttonBar = getButtonBar();
         buttonBar.removeAllViews();
         buttonBar.setPadding(padding, padding, padding, padding);
-
-        //Fixed monkey test issue
-        //Settings crash caused by null pointer parameter
-        //Add check with mUnmount's values
-        if (null == mUnmount) {
-            mUnmount = new Button(getActivity());
-            mUnmount.setText(R.string.storage_menu_unmount);
-            mUnmount.setOnClickListener(mUnmountListener);
-        }
-
         buttonBar.addView(mUnmount, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -181,7 +174,7 @@ public class PublicVolumeSettings extends SettingsPreferenceFragment {
                     result.value, result.units));
             mSummary.setSummary(getString(R.string.storage_volume_used,
                     Formatter.formatFileSize(context, totalBytes)));
-            mSummary.setPercent((int) ((usedBytes * 100) / totalBytes));
+            mSummary.setPercent(usedBytes, totalBytes);
         }
 
         if (mVolume.getState() == VolumeInfo.STATE_UNMOUNTED) {

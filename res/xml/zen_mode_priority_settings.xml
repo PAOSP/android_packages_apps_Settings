@@ -19,13 +19,6 @@
     android:key="zen_mode_priority_settings"
     android:title="@string/zen_mode_priority_settings_title" >
 
-    <!-- Alarms -->
-    <SwitchPreference
-        android:key="alarms"
-        android:title="@string/zen_mode_alarms"
-        android:enabled="false"
-        android:defaultValue="true"/>
-
     <!-- Reminders -->
     <SwitchPreference
         android:key="reminders"
@@ -35,6 +28,14 @@
     <SwitchPreference
         android:key="events"
         android:title="@string/zen_mode_events"/>
+
+    <!-- Alarms -->
+    <SwitchPreference
+        android:key="alarms"
+        android:title="@string/zen_mode_alarms"
+        android:summary="@string/zen_mode_alarms_summary"
+        android:enabled="false"
+        android:defaultValue="true"/>
 
     <!-- Messages -->
     <DropDownPreference
@@ -52,13 +53,5 @@
     <SwitchPreference
         android:key="repeat_callers"
         android:title="@string/zen_mode_repeat_callers"/>
-
-    <cyanogenmod.preference.CMSystemSettingDropDownPreference
-        android:key="zen_priority_vibration_mode"
-        android:title="@string/zen_mode_vibration"
-        android:summary="%s"
-        android:entries="@array/zen_vibration_mode_entries"
-        android:entryValues="@array/zen_vibration_mode_values"
-        android:defaultValue="0" />
 
 </PreferenceScreen>

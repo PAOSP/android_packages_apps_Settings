@@ -24,54 +24,47 @@ import android.hardware.usb.UsbPort;
 import android.hardware.usb.UsbPortStatus;
 import android.os.UserHandle;
 import android.os.UserManager;
-
-import com.android.settings.R;
-import com.android.settings.TetherSettings;
+import android.support.annotation.VisibleForTesting;
 
 public class UsbBackend {
 
-    private static final int MODE_POWER_MASK  = 0x01;
+    public static final int MODE_POWER_MASK  = 0x01;
     public static final int MODE_POWER_SINK   = 0x00;
     public static final int MODE_POWER_SOURCE = 0x01;
 
-    private static final int MODE_DATA_MASK  = 0x07 << 1;
+    public static final int MODE_DATA_MASK  = 0x03 << 1;
     public static final int MODE_DATA_NONE   = 0x00 << 1;
     public static final int MODE_DATA_MTP    = 0x01 << 1;
     public static final int MODE_DATA_PTP    = 0x02 << 1;
     public static final int MODE_DATA_MIDI   = 0x03 << 1;
-    public static final int MODE_DATA_TETHERING   = 0x04 << 1;
 
     private final boolean mRestricted;
     private final boolean mRestrictedBySystem;
     private final boolean mMidi;
 
-    private UserManager mUserManager;
     private UsbManager mUsbManager;
     private UsbPort mPort;
     private UsbPortStatus mPortStatus;
 
-    private boolean mIsUnlocked;
-    private boolean mTetheringEnabled;
     private Context mContext;
 
     public UsbBackend(Context context) {
-        mContext = context;
-        Intent intent = context.registerReceiver(null,
-                new IntentFilter(UsbManager.ACTION_USB_STATE));
-        mIsUnlocked = intent == null ?
-                false : intent.getBooleanExtra(UsbManager.USB_DATA_UNLOCKED, false);
+        this(context, new UserRestrictionUtil(context));
+    }
 
-        mUserManager = UserManager.get(context);
+    @VisibleForTesting
+    public UsbBackend(Context context, UserRestrictionUtil userRestrictionUtil) {
+        mContext = context;
         mUsbManager = context.getSystemService(UsbManager.class);
 
-        mTetheringEnabled = context.getResources().getBoolean(
-                R.bool.config_regional_usb_tethering_quick_start_enable);
-        mRestricted = mUserManager.hasUserRestriction(UserManager.DISALLOW_USB_FILE_TRANSFER);
-        mRestrictedBySystem = mUserManager.hasBaseUserRestriction(
-                UserManager.DISALLOW_USB_FILE_TRANSFER, UserHandle.of(UserHandle.myUserId()));
+        mRestricted = userRestrictionUtil.isUsbFileTransferRestricted();
+        mRestrictedBySystem = userRestrictionUtil.isUsbFileTransferRestrictedBySystem();
         mMidi = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MIDI);
 
         UsbPort[] ports = mUsbManager.getPorts();
+        if (ports == null) {
+            return;
+        }
         // For now look for a connected port, in the future we should identify port in the
         // notification and pick based on that.
         final int N = ports.length;
@@ -95,11 +88,7 @@ public class UsbBackend {
     }
 
     public int getUsbDataMode() {
-        if (mTetheringEnabled
-                && mUsbManager.isFunctionEnabled(UsbManager.USB_FUNCTION_RNDIS)) {
-            return MODE_DATA_TETHERING;
-        }
-        if (!mIsUnlocked) {
+        if (!isUsbDataUnlocked()) {
             return MODE_DATA_NONE;
         } else if (mUsbManager.isFunctionEnabled(UsbManager.USB_FUNCTION_MTP)) {
             return MODE_DATA_MTP;
@@ -109,6 +98,13 @@ public class UsbBackend {
             return MODE_DATA_MIDI;
         }
         return MODE_DATA_NONE; // ...
+    }
+
+    private boolean isUsbDataUnlocked() {
+        Intent intent = mContext.registerReceiver(null,
+            new IntentFilter(UsbManager.ACTION_USB_STATE));
+        return intent == null ?
+            false : intent.getBooleanExtra(UsbManager.USB_DATA_UNLOCKED, false);
     }
 
     private void setUsbFunction(int mode) {
@@ -121,11 +117,6 @@ public class UsbBackend {
                 break;
             case MODE_DATA_MIDI:
                 mUsbManager.setCurrentFunction(UsbManager.USB_FUNCTION_MIDI, true);
-                break;
-            case MODE_DATA_TETHERING:
-                Intent intent = new Intent();
-                intent.setClass(mContext, TetherSettings.class);
-                mContext.startActivity(intent);
                 break;
             default:
                 mUsbManager.setCurrentFunction(null, false);
@@ -189,5 +180,23 @@ public class UsbBackend {
         }
         // No port, support sink modes only.
         return (mode & MODE_POWER_MASK) != MODE_POWER_SOURCE;
+    }
+
+    // Wrapper class to enable testing with UserManager APIs
+    public static class UserRestrictionUtil {
+        private UserManager mUserManager;
+
+        public UserRestrictionUtil(Context context) {
+            mUserManager = UserManager.get(context);
+        }
+
+        public boolean isUsbFileTransferRestricted() {
+            return mUserManager.hasUserRestriction(UserManager.DISALLOW_USB_FILE_TRANSFER);
+        }
+
+        public boolean isUsbFileTransferRestrictedBySystem() {
+            return mUserManager.hasBaseUserRestriction(
+                UserManager.DISALLOW_USB_FILE_TRANSFER, UserHandle.of(UserHandle.myUserId()));
+        }
     }
 }

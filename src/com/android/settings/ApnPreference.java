@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.provider.Telephony;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceViewHolder;
+import android.telephony.SubscriptionManager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -34,6 +35,8 @@ import android.widget.RelativeLayout;
 public class ApnPreference extends Preference implements
         CompoundButton.OnCheckedChangeListener, OnClickListener {
     final static String TAG = "ApnPreference";
+
+    private int mSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
 
     public ApnPreference(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
@@ -51,7 +54,6 @@ public class ApnPreference extends Preference implements
     private static CompoundButton mCurrentChecked = null;
     private boolean mProtectFromCheckedChange = false;
     private boolean mSelectable = true;
-    private boolean mApnReadOnly = false;
 
     @Override
     public void onBindViewHolder(PreferenceViewHolder view) {
@@ -117,9 +119,9 @@ public class ApnPreference extends Preference implements
             if (context != null) {
                 int pos = Integer.parseInt(getKey());
                 Uri url = ContentUris.withAppendedId(Telephony.Carriers.CONTENT_URI, pos);
-                Intent intent = new Intent(Intent.ACTION_EDIT, url);
-                intent.putExtra("DISABLE_EDITOR", mApnReadOnly);
-                context.startActivity(intent);
+                Intent editIntent = new Intent(Intent.ACTION_EDIT, url);
+                editIntent.putExtra(ApnSettings.SUB_ID, mSubId);
+                context.startActivity(editIntent);
             }
         }
     }
@@ -132,11 +134,7 @@ public class ApnPreference extends Preference implements
         return mSelectable;
     }
 
-    public void setApnReadOnly(boolean apnReadOnly) {
-        mApnReadOnly = apnReadOnly;
-    }
-
-    public boolean getApnReadOnly() {
-        return mApnReadOnly;
+    public void setSubId(int subId) {
+        mSubId = subId;
     }
 }

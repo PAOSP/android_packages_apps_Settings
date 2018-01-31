@@ -22,7 +22,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.provider.Settings;
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.PreviewSeekBarPreferenceFragment;
 import com.android.settings.R;
 
@@ -43,7 +43,7 @@ public class ToggleFontSizePreferenceFragment extends PreviewSeekBarPreferenceFr
         Resources res = getContext().getResources();
         final ContentResolver resolver = getContext().getContentResolver();
         // Mark the appropriate item in the preferences list.
-        mEntries = res.getStringArray(R.array.entries_font_size_percent);
+        mEntries = res.getStringArray(R.array.entries_font_size);
         final String[] strEntryValues = res.getStringArray(R.array.entryvalues_font_size);
         final float currentScale =
                 Settings.System.getFloat(resolver, Settings.System.FONT_SCALE, 1.0f);
@@ -73,7 +73,12 @@ public class ToggleFontSizePreferenceFragment extends PreviewSeekBarPreferenceFr
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getHelpResource() {
+        return R.string.help_url_font_size;
+    }
+
+    @Override
+    public int getMetricsCategory() {
         return MetricsEvent.ACCESSIBILITY_FONT_SIZE;
     }
 

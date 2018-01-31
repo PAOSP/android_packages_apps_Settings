@@ -15,11 +15,8 @@
 -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="sim_cards"
     android:title="@string/sim_settings_title">
-
-    <PreferenceCategory
-            android:key="sim_cards"
-            android:title="@string/sim_settings_title"/>
 
     <PreferenceCategory
             android:key="sim_activities"
@@ -34,16 +31,7 @@
         <Preference android:key="sim_sms"
             android:title="@string/sms_messages_title" />
 
-        <cyanogenmod.preference.SystemSettingSwitchPreference
-            android:key="no_sim_cluster_switch"
-            android:title="@string/no_sim_cluster_switch_title"
-            android:summary="@string/no_sim_cluster_switch_summary"
-            android:defaultValue="false"/>
-
     </PreferenceCategory>
 
-    <PreferenceCategory
-        android:key="mobile_network"
-        android:title="@string/sim_mobile_network_settings_category_title" />
 
 </PreferenceScreen>

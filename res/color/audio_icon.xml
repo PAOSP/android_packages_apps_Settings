@@ -18,3 +18,4 @@
     <item android:state_enabled="false" android:color="#24000000" />
     <item android:color="#8a000000" />
 </selector>
+

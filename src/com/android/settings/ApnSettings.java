@@ -26,7 +26,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.Resources.NotFoundException;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -35,7 +34,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PersistableBundle;
-import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Telephony;
@@ -43,7 +41,6 @@ import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceGroup;
 import android.support.v7.preference.PreferenceScreen;
 import android.telephony.CarrierConfigManager;
-import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -56,7 +53,7 @@ import android.view.MotionEvent;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.dataconnection.ApnSetting;
@@ -65,8 +62,6 @@ import com.android.internal.telephony.uicc.UiccController;
 import com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 
 public class ApnSettings extends RestrictedSettingsFragment implements
         Preference.OnPreferenceChangeListener {
@@ -83,17 +78,12 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     public static final String MVNO_TYPE = "mvno_type";
     public static final String MVNO_MATCH_DATA = "mvno_match_data";
 
-    private static final String APN_NAME_DM = "CMCC DM";
-
     private static final int ID_INDEX = 0;
     private static final int NAME_INDEX = 1;
     private static final int APN_INDEX = 2;
     private static final int TYPES_INDEX = 3;
     private static final int MVNO_TYPE_INDEX = 4;
     private static final int MVNO_MATCH_DATA_INDEX = 5;
-    private static final int RO_INDEX = 6;
-    private static final int BEARER_INDEX = 7;
-    private static final int BEARER_BITMASK_INDEX = 8;
 
     private static final int MENU_NEW = Menu.FIRST;
     private static final int MENU_RESTORE = Menu.FIRST + 1;
@@ -125,13 +115,10 @@ public class ApnSettings extends RestrictedSettingsFragment implements
 
     private boolean mHideImsApn;
     private boolean mAllowAddingApns;
-    private boolean mApnSettingsHidden;
 
     public ApnSettings() {
         super(UserManager.DISALLOW_CONFIG_MOBILE_NETWORKS);
     }
-
-    private HashSet mIccidSet;
 
     private final BroadcastReceiver mMobileStateReceiver = new BroadcastReceiver() {
         @Override
@@ -143,6 +130,8 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                 case CONNECTED:
                     if (!mRestoreDefaultApnMode) {
                         fillList();
+                    } else {
+                        showDialog(DIALOG_RESTORE_DEFAULTAPN);
                     }
                     break;
                 }
@@ -160,7 +149,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.APN;
     }
 
@@ -170,9 +159,6 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         final Activity activity = getActivity();
         final int subId = activity.getIntent().getIntExtra(SUB_ID,
                 SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-        fillOperatorIccidset();
-        Log.d(TAG, "onCreate: subId = " + subId);
-
 
         mMobileStateFilter = new IntentFilter(
                 TelephonyIntents.ACTION_ANY_DATA_CONNECTION_STATE_CHANGED);
@@ -187,6 +173,15 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         PersistableBundle b = configManager.getConfig();
         mHideImsApn = b.getBoolean(CarrierConfigManager.KEY_HIDE_IMS_APN_BOOL);
         mAllowAddingApns = b.getBoolean(CarrierConfigManager.KEY_ALLOW_ADDING_APNS_BOOL);
+        if (mAllowAddingApns) {
+            String[] readOnlyApnTypes = b.getStringArray(
+                    CarrierConfigManager.KEY_READ_ONLY_APN_TYPES_STRING_ARRAY);
+            // if no apn type can be edited, do not allow adding APNs
+            if (ApnEditor.hasAllApns(readOnlyApnTypes)) {
+                Log.d(TAG, "not allowing adding APN because all APN types are read only");
+                mAllowAddingApns = false;
+            }
+        }
         mUserManager = UserManager.get(activity);
     }
 
@@ -198,18 +193,11 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         mUnavailable = isUiRestricted();
         setHasOptionsMenu(!mUnavailable);
         if (mUnavailable) {
-            setPreferenceScreen(new PreferenceScreen(getPrefContext(), null));
-            getPreferenceScreen().removeAll();
+            addPreferencesFromResource(R.xml.placeholder_prefs);
             return;
         }
 
         addPreferencesFromResource(R.xml.apn_settings);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        mApnSettingsHidden = true;
     }
 
     @Override
@@ -225,7 +213,6 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         if (!mRestoreDefaultApnMode) {
             fillList();
         }
-        mApnSettingsHidden = false;
     }
 
     @Override
@@ -259,92 +246,28 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         return null;
     }
 
-    private void fillOperatorIccidset(){
-        mIccidSet = new HashSet<String>();
-        mIccidSet.add("8991840");
-        mIccidSet.add("8991854");
-        mIccidSet.add("8991855");
-        mIccidSet.add("8991856");
-        mIccidSet.add("8991857");
-        mIccidSet.add("8991858");
-        mIccidSet.add("8991859");
-        mIccidSet.add("899186");
-        mIccidSet.add("8991870");
-        mIccidSet.add("8991871");
-        mIccidSet.add("8991872");
-        mIccidSet.add("8991873");
-        mIccidSet.add("8991874");
-    }
-
     private void fillList() {
         final TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        final String mccmnc = mSubscriptionInfo == null ? ""
-                : tm.getSimOperator(mSubscriptionInfo.getSubscriptionId());
+        final int subId = mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
+                : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+        final String mccmnc = mSubscriptionInfo == null ? "" : tm.getSimOperator(subId);
         Log.d(TAG, "mccmnc = " + mccmnc);
         StringBuilder where = new StringBuilder("numeric=\"" + mccmnc +
                 "\" AND NOT (type='ia' AND (apn=\"\" OR apn IS NULL)) AND user_visible!=0");
 
-        if (SystemProperties.getBoolean("persist.sys.hideapn", true)) {
-            Log.d(TAG, "hiden apn feature enable.");
-            // remove the filtered items, no need to show in UI
-
-            if(getResources().getBoolean(R.bool.config_hide_ims_apns)){
-                mHideImsApn = true;
-            }
-
-            // Filer fota and dm for specail carrier
-            if (getResources().getBoolean(R.bool.config_hide_dm_enabled)) {
-                for (String plmn : getResources().getStringArray(R.array.hidedm_plmn_list)) {
-                    if (plmn.equals(mccmnc)) {
-                        where.append(" and name <>\"" + APN_NAME_DM + "\"");
-                        break;
-                    }
-                }
-            }
-
-            if (getResources().getBoolean(R.bool.config_hidesupl_enable)) {
-                boolean needHideSupl = false;
-                for (String plmn : getResources().getStringArray(R.array.hidesupl_plmn_list)) {
-                    if (plmn.equals(mccmnc)) {
-                        needHideSupl = true;
-                        break;
-                    }
-                }
-
-                if (needHideSupl) {
-                    where.append(" and type <>\"" + PhoneConstants.APN_TYPE_SUPL + "\"");
-                }
-            }
-
-            // Hide mms if config is true
-            if (getResources().getBoolean(R.bool.config_hide_mms_enable)) {
-                  where.append( " and type <>\"" + PhoneConstants.APN_TYPE_MMS + "\"");
-            }
-        }
-
-        if(getResources().getBoolean(R.bool.config_regional_hide_ims_and_dun_apns)){
-            where.append(" AND type <>\"" + PhoneConstants.APN_TYPE_DUN + "\"");
-            where.append(" AND type <>\"" + PhoneConstants.APN_TYPE_IMS + "\"");
-        }
         if (mHideImsApn) {
             where.append(" AND NOT (type='ims')");
         }
 
-        if (isOperatorIccId()) {
-            where.append(" AND type <>\"" + PhoneConstants.APN_TYPE_EMERGENCY + "\"");
-            where.append(" AND type <>\"" + PhoneConstants.APN_TYPE_IMS + "\"");
-        }
-        Log.d(TAG, "where---" + where);
-
         Cursor cursor = getContentResolver().query(Telephony.Carriers.CONTENT_URI, new String[] {
-                "_id", "name", "apn", "type", "mvno_type", "mvno_match_data", "read_only", "bearer",
-                "bearer_bitmask"}, where.toString(), null, Telephony.Carriers.DEFAULT_SORT_ORDER);
+                "_id", "name", "apn", "type", "mvno_type", "mvno_match_data"}, where.toString(),
+                null, Telephony.Carriers.DEFAULT_SORT_ORDER);
 
         if (cursor != null) {
             IccRecords r = null;
             if (mUiccController != null && mSubscriptionInfo != null) {
-                r = mUiccController.getIccRecords(SubscriptionManager.getPhoneId(
-                        mSubscriptionInfo.getSubscriptionId()), UiccController.APP_FAM_3GPP);
+                r = mUiccController.getIccRecords(
+                        SubscriptionManager.getPhoneId(subId), UiccController.APP_FAM_3GPP);
             }
             PreferenceGroup apnList = (PreferenceGroup) findPreference("apn_list");
             apnList.removeAll();
@@ -363,35 +286,15 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                 String type = cursor.getString(TYPES_INDEX);
                 String mvnoType = cursor.getString(MVNO_TYPE_INDEX);
                 String mvnoMatchData = cursor.getString(MVNO_MATCH_DATA_INDEX);
-                boolean readOnly = (cursor.getInt(RO_INDEX) == 1);
-                String localizedName = getLocalizedName(getActivity(), cursor, NAME_INDEX);
-                if (!TextUtils.isEmpty(localizedName)) {
-                    name = localizedName;
-                }
-                int bearer = cursor.getInt(BEARER_INDEX);
-                int bearerBitMask = cursor.getInt(BEARER_BITMASK_INDEX);
-                int fullBearer = ServiceState.getBitmaskForTech(bearer) | bearerBitMask;
-                int subId = mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
-                        : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
-                int radioTech = networkTypeToRilRidioTechnology(TelephonyManager.getDefault()
-                        .getDataNetworkType(subId));
-                if (!ServiceState.bitmaskHasTech(fullBearer, radioTech)
-                        && (bearer != 0 || bearerBitMask != 0)) {
-                    // In OOS, show APN with bearer as default
-                    if ((radioTech != ServiceState.RIL_RADIO_TECHNOLOGY_UNKNOWN) || (bearer == 0
-                            && radioTech == ServiceState.RIL_RADIO_TECHNOLOGY_UNKNOWN)) {
-                        cursor.moveToNext();
-                        continue;
-                    }
-                }
+
                 ApnPreference pref = new ApnPreference(getPrefContext());
 
-                pref.setApnReadOnly(readOnly);
                 pref.setKey(key);
                 pref.setTitle(name);
                 pref.setSummary(apn);
                 pref.setPersistent(false);
                 pref.setOnPreferenceChangeListener(this);
+                pref.setSubId(subId);
 
                 boolean selectable = ((type == null) || !type.equals("mms"));
                 pref.setSelectable(selectable);
@@ -421,78 +324,6 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                 apnList.addPreference(preference);
             }
         }
-    }
-
-    private boolean isOperatorIccId(){
-        final String iccid = mSubscriptionInfo == null ? ""
-                : mSubscriptionInfo.getIccId();
-        Iterator<String> itr = mIccidSet.iterator();
-        while (itr.hasNext()) {
-            if (iccid.contains(itr.next())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private int networkTypeToRilRidioTechnology(int nt) {
-        switch(nt) {
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_GPRS;
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_EDGE;
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_UMTS;
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_HSDPA;
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_HSUPA;
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_HSPA;
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_IS95B;
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_1xRTT;
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_EVDO_0;
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_EVDO_A;
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_EVDO_B;
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_EHRPD;
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_LTE;
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_HSPAP;
-            case TelephonyManager.NETWORK_TYPE_GSM:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_GSM;
-            case TelephonyManager.NETWORK_TYPE_TD_SCDMA:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_TD_SCDMA;
-            case TelephonyManager.NETWORK_TYPE_IWLAN:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_IWLAN;
-            case TelephonyManager.NETWORK_TYPE_LTE_CA:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_LTE_CA;
-            default:
-                return ServiceState.RIL_RADIO_TECHNOLOGY_UNKNOWN;
-        }
-    }
-
-    public static String getLocalizedName(Context context, Cursor cursor, int index) {
-        // If can find a localized name, replace the APN name with it
-        String resName = cursor.getString(index);
-        String localizedName = null;
-        if (resName != null && !resName.isEmpty()) {
-            int resId = context.getResources().getIdentifier(resName, "string",
-                    context.getPackageName());
-            try {
-                localizedName = context.getResources().getString(resId);
-                Log.d(TAG, "Replaced apn name with localized name");
-            } catch (NotFoundException e) {
-                Log.e(TAG, "Got execption while getting the localized apn name.", e);
-            }
-        }
-        return localizedName;
     }
 
     private void addApnToList(ApnPreference pref, ArrayList<ApnPreference> mnoList,
@@ -537,10 +368,6 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         case MENU_RESTORE:
             restoreDefaultApn();
             return true;
-
-        case android.R.id.home:
-            getActivity().onBackPressed();
-            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -561,11 +388,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     public boolean onPreferenceTreeClick(Preference preference) {
         int pos = Integer.parseInt(preference.getKey());
         Uri url = ContentUris.withAppendedId(Telephony.Carriers.CONTENT_URI, pos);
-        Intent intent = new Intent(Intent.ACTION_EDIT, url);
-        if (preference instanceof ApnPreference) {
-            intent.putExtra("DISABLE_EDITOR", ((ApnPreference) preference).getApnReadOnly());
-        }
-        startActivity(intent);
+        startActivity(new Intent(Intent.ACTION_EDIT, url));
         return true;
     }
 
@@ -586,14 +409,14 @@ public class ApnSettings extends RestrictedSettingsFragment implements
 
         ContentValues values = new ContentValues();
         values.put(APN_ID, mSelectedKey);
-        resolver.update(getUri(PREFERAPN_URI), values, null, null);
+        resolver.update(getUriForCurrSubId(PREFERAPN_URI), values, null, null);
     }
 
     private String getSelectedApnKey() {
         String key = null;
 
-        Cursor cursor = getContentResolver().query(getUri(PREFERAPN_URI), new String[] {"_id"},
-                null, null, Telephony.Carriers.DEFAULT_SORT_ORDER);
+        Cursor cursor = getContentResolver().query(getUriForCurrSubId(PREFERAPN_URI),
+                new String[] {"_id"}, null, null, Telephony.Carriers.DEFAULT_SORT_ORDER);
         if (cursor.getCount() > 0) {
             cursor.moveToFirst();
             key = cursor.getString(ID_INDEX);
@@ -624,6 +447,17 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         return true;
     }
 
+    // Append subId to the Uri
+    private Uri getUriForCurrSubId(Uri uri) {
+        int subId = mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
+                : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+        if (SubscriptionManager.isValidSubscriptionId(subId)) {
+            return Uri.withAppendedPath(uri, "subId/" + String.valueOf(subId));
+        } else {
+            return uri;
+        }
+    }
+
     private class RestoreApnUiHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
@@ -637,9 +471,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                     fillList();
                     getPreferenceScreen().setEnabled(true);
                     mRestoreDefaultApnMode = false;
-                    // if current fragment is not visible, in background or Homekey is pressed,
-                    // dismiss the dialog with state loss.
-                    removeDialog(DIALOG_RESTORE_DEFAULTAPN, mApnSettingsHidden);
+                    removeDialog(DIALOG_RESTORE_DEFAULTAPN);
                     Toast.makeText(
                         activity,
                         getResources().getString(
@@ -663,7 +495,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
             switch (msg.what) {
                 case EVENT_RESTORE_DEFAULTAPN_START:
                     ContentResolver resolver = getContentResolver();
-                    resolver.delete(getUri(DEFAULTAPN_URI), null, null);
+                    resolver.delete(getUriForCurrSubId(DEFAULTAPN_URI), null, null);
                     mRestoreApnUiHandler
                         .sendEmptyMessage(EVENT_RESTORE_DEFAULTAPN_COMPLETE);
                     break;
@@ -686,12 +518,11 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         return null;
     }
 
-    private Uri getUri(Uri uri) {
-        int subId = SubscriptionManager.getDefaultDataSubscriptionId();
-        if (mSubscriptionInfo != null && SubscriptionManager.isValidSubscriptionId(
-                mSubscriptionInfo.getSubscriptionId())) {
-            subId = mSubscriptionInfo.getSubscriptionId();
+    @Override
+    public int getDialogMetricsCategory(int dialogId) {
+        if (dialogId == DIALOG_RESTORE_DEFAULTAPN) {
+            return MetricsEvent.DIALOG_APN_RESTORE_DEFAULT;
         }
-        return Uri.withAppendedPath(uri, "/subId/" + subId);
+        return 0;
     }
 }

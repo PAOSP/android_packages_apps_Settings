@@ -52,18 +52,6 @@
 
         <include layout="@layout/loading_container" />
 
-        <com.android.settings.widget.FloatingActionButton
-            android:id="@+id/fab"
-            android:visibility="gone"
-            android:clickable="true"
-            android:layout_width="@dimen/fab_size"
-            android:layout_height="@dimen/fab_size"
-            android:layout_gravity="bottom|end"
-            android:layout_marginEnd="@dimen/fab_margin"
-            android:layout_marginBottom="@dimen/fab_margin"
-            android:elevation="@dimen/fab_elevation"
-            android:background="@drawable/fab_background" />
-
     </FrameLayout>
 
     <TextView android:id="@android:id/empty"
@@ -71,9 +59,8 @@
         android:layout_height="match_parent"
         android:padding="@*android:dimen/preference_fragment_padding_side"
         android:layout_gravity="center"
-        android:gravity="center"
-        android:visibility="gone"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
+        android:gravity="center_vertical"
+        android:visibility="gone" />
 
     <include layout="@layout/admin_support_details_empty_view" />
 

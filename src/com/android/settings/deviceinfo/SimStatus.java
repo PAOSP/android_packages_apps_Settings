@@ -16,6 +16,10 @@
 
 package com.android.settings.deviceinfo;
 
+import static android.content.Context.CARRIER_CONFIG_SERVICE;
+import static android.content.Context.TELEPHONY_SERVICE;
+
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -24,7 +28,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.support.v7.preference.Preference;
@@ -42,10 +45,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.TabHost;
+import android.widget.TabHost.OnTabChangeListener;
+import android.widget.TabHost.TabContentFactory;
+import android.widget.TabHost.TabSpec;
+import android.widget.TabWidget;
 
-import com.android.internal.logging.MetricsProto.MetricsEvent;
-import com.android.internal.telephony.DefaultPhoneNotifier;
+import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.telephony.Phone;
+import com.android.internal.telephony.PhoneConstantConversions;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.settings.R;
 import com.android.settings.SettingsPreferenceFragment;
@@ -54,17 +62,15 @@ import com.android.settingslib.DeviceInfoUtils;
 
 import java.util.List;
 
-import org.codeaurora.ims.utils.QtiImsExtUtils;
-import static android.content.Context.CARRIER_CONFIG_SERVICE;
-import static android.content.Context.TELEPHONY_SERVICE;
 
 /**
  * Display the following information
  * # Phone Number
  * # Network
  * # Roaming
+ * # Device Id (IMEI in GSM and MEID in CDMA)
  * # Network type
- * # Operator info (area info cell broadcast for Brazil)
+ * # Operator info (area update info cell broadcast)
  * # Signal Strength
  *
  */
@@ -79,20 +85,17 @@ public class SimStatus extends SettingsPreferenceFragment {
     private static final String KEY_LATEST_AREA_INFO = "latest_area_info";
     private static final String KEY_PHONE_NUMBER = "number";
     private static final String KEY_SIGNAL_STRENGTH = "signal_strength";
+    private static final String KEY_IMEI = "imei";
+    private static final String KEY_IMEI_SV = "imei_sv";
     private static final String KEY_ICCID = "iccid";
-    private static final String COUNTRY_ABBREVIATION_BRAZIL = "br";
 
-    static final String CB_AREA_INFO_RECEIVED_ACTION =
-            "android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
+    static private final String CB_AREA_INFO_RECEIVED_ACTION =
+            "com.android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
 
-    static final String GET_LATEST_CB_AREA_INFO_ACTION =
-            "android.cellbroadcastreceiver.GET_LATEST_CB_AREA_INFO";
+    static private final String GET_LATEST_CB_AREA_INFO_ACTION =
+            "com.android.cellbroadcastreceiver.GET_LATEST_CB_AREA_INFO";
 
-    // Require the sender to have this permission to prevent third-party spoofing.
-    static final String CB_AREA_INFO_SENDER_PERMISSION =
-            "android.permission.RECEIVE_EMERGENCY_BROADCAST";
-
-    static final String EXTRA_SLOT_ID = "slot_id";
+    static private final String CELL_BROADCAST_RECEIVER_APP = "com.android.cellbroadcastreceiver";
 
     private TelephonyManager mTelephonyManager;
     private CarrierConfigManager mCarrierConfigManager;
@@ -106,8 +109,15 @@ public class SimStatus extends SettingsPreferenceFragment {
     // Default summary for items
     private String mDefaultText;
 
+    private TabHost mTabHost;
+    private TabWidget mTabWidget;
+    private ListView mListView;
+    private List<SubscriptionInfo> mSelectableSubInfos;
+
     private PhoneStateListener mPhoneStateListener;
-    private BroadcastReceiver mAreaInfoReceiver = new BroadcastReceiver() {
+
+    // Once the cell broadcast configuration is moved into telephony framework,
+    private final BroadcastReceiver mAreaInfoReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -117,8 +127,7 @@ public class SimStatus extends SettingsPreferenceFragment {
                     return;
                 }
                 CellBroadcastMessage cbMessage = (CellBroadcastMessage) extras.get("message");
-                if (cbMessage != null && cbMessage.getServiceCategory() == 50
-                        && mSir.getSubscriptionId() == cbMessage.getSubId()) {
+                if (cbMessage != null && mSir.getSubscriptionId() == cbMessage.getSubId()) {
                     String latestAreaInfo = cbMessage.getMessageBody();
                     updateAreaInfo(latestAreaInfo);
                 }
@@ -132,6 +141,9 @@ public class SimStatus extends SettingsPreferenceFragment {
         mTelephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
         mCarrierConfigManager = (CarrierConfigManager) getSystemService(CARRIER_CONFIG_SERVICE);
 
+        mSelectableSubInfos = SubscriptionManager.from(getContext())
+                .getActiveSubscriptionInfoList();
+
         addPreferencesFromResource(R.xml.device_info_sim_status);
 
         mRes = getResources();
@@ -141,19 +153,48 @@ public class SimStatus extends SettingsPreferenceFragment {
     }
 
     @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        if (mSelectableSubInfos == null) {
+            mSir = null;
+        } else {
+            mSir = mSelectableSubInfos.size() > 0 ? mSelectableSubInfos.get(0) : null;
+
+            if (mSelectableSubInfos.size() > 1) {
+                View view = inflater.inflate(R.layout.icc_lock_tabs, container, false);
+                final ViewGroup prefs_container = (ViewGroup) view.findViewById(
+                        R.id.prefs_container);
+                Utils.prepareCustomPreferencesList(container, view, prefs_container, false);
+                View prefs = super.onCreateView(inflater, prefs_container, savedInstanceState);
+                prefs_container.addView(prefs);
+
+                mTabHost = (TabHost) view.findViewById(android.R.id.tabhost);
+                mTabWidget = (TabWidget) view.findViewById(android.R.id.tabs);
+                mListView = (ListView) view.findViewById(android.R.id.list);
+
+                mTabHost.setup();
+                mTabHost.setOnTabChangedListener(mTabListener);
+                mTabHost.clearAllTabs();
+
+                for (int i = 0; i < mSelectableSubInfos.size(); i++) {
+                    mTabHost.addTab(buildTabSpec(String.valueOf(i),
+                            String.valueOf(mSelectableSubInfos.get(i).getDisplayName())));
+                }
+                return view;
+            }
+        }
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
+    @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        Intent intent = getActivity().getIntent();
-        SubscriptionManager subscriptionManager = SubscriptionManager.from(getActivity());
-        int slotId = intent.getIntExtra(EXTRA_SLOT_ID, 0);
-        mSir = subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(slotId);
 
         updatePhoneInfos();
     }
 
     @Override
-    protected int getMetricsCategory() {
+    public int getMetricsCategory() {
         return MetricsEvent.DEVICEINFO_SIM_STATUS;
     }
 
@@ -173,11 +214,12 @@ public class SimStatus extends SettingsPreferenceFragment {
             if (mShowLatestAreaInfo) {
                 getContext().registerReceiver(mAreaInfoReceiver,
                         new IntentFilter(CB_AREA_INFO_RECEIVED_ACTION),
-                        CB_AREA_INFO_SENDER_PERMISSION, null);
+                        Manifest.permission.RECEIVE_EMERGENCY_BROADCAST, null);
                 // Ask CellBroadcastReceiver to broadcast the latest area info received
                 Intent getLatestIntent = new Intent(GET_LATEST_CB_AREA_INFO_ACTION);
+                getLatestIntent.setPackage(CELL_BROADCAST_RECEIVER_APP);
                 getContext().sendBroadcastAsUser(getLatestIntent, UserHandle.ALL,
-                        CB_AREA_INFO_SENDER_PERMISSION);
+                        Manifest.permission.RECEIVE_EMERGENCY_BROADCAST);
             }
         }
     }
@@ -233,12 +275,10 @@ public class SimStatus extends SettingsPreferenceFragment {
 
         boolean show4GForLTE = false;
         try {
-            if (getActivity() != null) {
-                Context con = getActivity().createPackageContext("com.android.systemui", 0);
-                int id = con.getResources().getIdentifier("config_show4GForLTE",
-                        "bool", "com.android.systemui");
-                show4GForLTE = con.getResources().getBoolean(id);
-            }
+            Context con = getActivity().createPackageContext("com.android.systemui", 0);
+            int id = con.getResources().getIdentifier("config_show4GForLTE",
+                    "bool", "com.android.systemui");
+            show4GForLTE = con.getResources().getBoolean(id);
         } catch (NameNotFoundException e) {
             Log.e(TAG, "NameNotFoundException for show4GFotLTE");
         }
@@ -246,24 +286,12 @@ public class SimStatus extends SettingsPreferenceFragment {
         if (networktype != null && networktype.equals("LTE") && show4GForLTE) {
             networktype = "4G";
         }
-
-        if (QtiImsExtUtils.isCarrierOneSupported()) {
-            if (TelephonyManager.NETWORK_TYPE_LTE == actualDataNetworkType ||
-                    TelephonyManager.NETWORK_TYPE_LTE == actualVoiceNetworkType) {
-                if (mTelephonyManager.isImsRegisteredForSubscriber(subId)) {
-                    networktype = getResources().
-                            getString(R.string.lte_data_and_voice_calling_enabled);
-                } else {
-                    networktype = getResources().getString(R.string.lte_data_service_enabled);
-                }
-            }
-         }
         setSummaryText(KEY_NETWORK_TYPE, networktype);
     }
 
     private void updateDataState() {
         final int state =
-                DefaultPhoneNotifier.convertDataState(mPhone.getDataConnectionState());
+                PhoneConstantConversions.convertDataState(mPhone.getDataConnectionState());
 
         String display = mRes.getString(R.string.radioInfo_unknown);
 
@@ -352,11 +380,8 @@ public class SimStatus extends SettingsPreferenceFragment {
 
     private void updatePreference() {
         if (mPhone.getPhoneType() != TelephonyManager.PHONE_TYPE_CDMA) {
-            // only show area info when SIM country is Brazil
-            if (COUNTRY_ABBREVIATION_BRAZIL.equals(mTelephonyManager.getSimCountryIso(
-                            mSir.getSubscriptionId()))) {
-                mShowLatestAreaInfo = true;
-            }
+            mShowLatestAreaInfo = Resources.getSystem().getBoolean(
+                    com.android.internal.R.bool.config_showAreaUpdateInfoSettings);
         }
         PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(
                 mSir.getSubscriptionId());
@@ -367,6 +392,8 @@ public class SimStatus extends SettingsPreferenceFragment {
         // If formattedNumber is null or empty, it'll display as "Unknown".
         setSummaryText(KEY_PHONE_NUMBER,
                 DeviceInfoUtils.getFormattedPhoneNumber(getContext(), mSir));
+        setSummaryText(KEY_IMEI, mPhone.getImei());
+        setSummaryText(KEY_IMEI_SV, mPhone.getDeviceSvn());
 
         if (!mShowICCID) {
             removePreferenceFromScreen(KEY_ICCID);
@@ -394,10 +421,11 @@ public class SimStatus extends SettingsPreferenceFragment {
                 }
 
                 mPhone = phone;
-                //avoid left at TelephonyManager Memory leak before create a new PhoneStateLister
+                // To avoid register multiple listeners when user changes the tab.
                 if (mPhoneStateListener != null && mTelephonyManager != null) {
                     mTelephonyManager.listen(mPhoneStateListener,
                             PhoneStateListener.LISTEN_NONE);
+                    mPhoneStateListener = null;
                 }
                 mPhoneStateListener = new PhoneStateListener(mSir.getSubscriptionId()) {
                     @Override
@@ -418,5 +446,34 @@ public class SimStatus extends SettingsPreferenceFragment {
                 };
             }
         }
+    }
+    private OnTabChangeListener mTabListener = new OnTabChangeListener() {
+        @Override
+        public void onTabChanged(String tabId) {
+            final int slotId = Integer.parseInt(tabId);
+            mSir = mSelectableSubInfos.get(slotId);
+
+            // The User has changed tab; update the SIM information.
+            updatePhoneInfos();
+            mTelephonyManager.listen(mPhoneStateListener,
+                    PhoneStateListener.LISTEN_DATA_CONNECTION_STATE
+                    | PhoneStateListener.LISTEN_SIGNAL_STRENGTHS
+                    | PhoneStateListener.LISTEN_SERVICE_STATE);
+            updateDataState();
+            updateNetworkType();
+            updatePreference();
+        }
+    };
+
+    private TabContentFactory mEmptyTabContent = new TabContentFactory() {
+        @Override
+        public View createTabContent(String tag) {
+            return new View(mTabHost.getContext());
+        }
+    };
+
+    private TabSpec buildTabSpec(String tag, String title) {
+        return mTabHost.newTabSpec(tag).setIndicator(title).setContent(
+                mEmptyTabContent);
     }
 }
